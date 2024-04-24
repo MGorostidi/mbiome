@@ -1,0 +1,114 @@
+#!/bin/bash
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+
+cd ${DIR}
+
+echo -e "${ORANGE} Please enter if the sequenciation has been IonTorrent (then write pyro) or if it has been through Illumina (write if it has been paired or single). ${lightCyan} Options (pyro, paired, single):"
+read seqType
+
+echo -e "${lightCyan}Now please, specify the Analysis Type you are performing (please write ITS or 16S):"
+read analysisType
+
+mkdir Taxonomic-Analysis
+
+if test ${analysisType} == "16S"
+    then
+        #There are different databases to which we can map our reads for the classification, however, for 16S analysis, we will normally use GreenGenes: 
+        #I will probably add a conditional code here, so the user can decide between Silva or Green Genes:
+        #VSEARCH classifier
+        echo -e "${Purple}Starting Taxonomic Classification.... Vsearch Classificator${NC}"
+        qiime feature-classifier classify-consensus-vsearch \
+         --i-query ${DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/GreenGenesDB_imported/97_otus_refs.qza \
+         --i-reference-taxonomy /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/GreenGenesDB_imported/97_otu_taxonomy.qza \
+         --p-threads 4 \
+         --o-classification ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza
+
+        qiime metadata tabulate \
+          --m-input-file ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza  \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qzv
+
+        qiime taxa barplot \
+          --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
+          --i-taxonomy ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza  \
+          --m-metadata-file ${DIR}/samples-metadata.tsv \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-vsearch.qzv
+
+        echo -e "${Purple}Starting Taxonomic Classification.... BLAST Classificator${NC}"
+        #BLAST classifier
+        qiime feature-classifier classify-consensus-blast \
+         --i-query ${DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/GreenGenesDB_imported/97_otus_refs.qza \
+         --i-reference-taxonomy /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/GreenGenesDB_imported/97_otu_taxonomy.qza \
+         --o-classification ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza
+
+        qiime metadata tabulate \
+          --m-input-file ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza  \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qzv
+
+        qiime taxa barplot \
+          --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
+          --i-taxonomy ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza  \
+          --m-metadata-file ${DIR}/samples-metadata.tsv \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-blast.qzv
+
+echo "Since the experiment analyzes 16S data, Green Genes DataBase, with97% similarity, is used for the Taxonomic classification step.
+The classificator used is classify-consensus-vsearch, based on the Qiime2Forum reccomendation (in the IonTorrent data pipeline discussion). However, in another Qiime2Forum post, they suggest us to use classify-consensus-blast, since it performs a more local analysis. Therefore, in the taxonomic step both classifators are run. After that a comparison will be made." >| Taxonomic_report.txt
+
+elif test ${analysisType} == "ITS"
+    then
+        echo -e "${Purple}Starting Taxonomic Classification.... Vsearch Classificator${NC}"
+
+        #VSEARCH classifier
+        qiime feature-classifier classify-consensus-vsearch \
+         --i-query ${DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/ITS_UNITEdatabase/unite_dyn_refs.qza \
+         --i-reference-taxonomy /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/ITS_UNITEdatabase/unite_dyn_taxa.qza \
+         --p-threads 4 \
+         --o-classification ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza
+
+        qiime metadata tabulate \
+          --m-input-file ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza  \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qzv
+
+        qiime taxa barplot \
+          --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
+          --i-taxonomy ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza  \
+          --m-metadata-file ${DIR}/samples-metadata.tsv \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-vsearch.qzv
+
+        echo -e "${Purple}Starting Taxonomic Classification.... BLAST Classificator${NC}"
+        #BLAST classifier
+        qiime feature-classifier classify-consensus-blast \
+         --i-query ${DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/ITS_UNITEdatabase/unite_dyn_refs.qza \
+         --i-reference-taxonomy /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/ReferenceDB/ITS_UNITEdatabase/unite_dyn_taxa.qza \
+         --o-classification ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza
+
+        qiime metadata tabulate \
+          --m-input-file ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza  \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qzv
+
+        qiime taxa barplot \
+          --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
+          --i-taxonomy ${DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza  \
+          --m-metadata-file ${DIR}/samples-metadata.tsv \
+          --o-visualization ${DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-blast.qzv
+echo "Since the experiment analyzes ITS data, UNITE DataBase, is used for the Taxonomic classification step.
+The classificator used is classify-consensus-vsearch, based on the Qiime2Forum reccomendation (in the IonTorrent data pipeline discussion). However, in another Qiime2Forum post, they suggest us to use classify-consensus-blast, since it performs a more local analysis. Therefore, in the taxonomic step both classifators are run. After that a comparison will be made." >| Taxonomic_report.txt
+fi
+
+bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/Diversity
+
+
+

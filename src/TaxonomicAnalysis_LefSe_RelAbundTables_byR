@@ -1,0 +1,47 @@
+#!/bin/bash
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We initialize the experiment path:
+experimentsDir="/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Experiments"
+
+#We ask for the experiment folder:
+echo -e "${ORANGE} Please enter your ${lightCyan} experiment folder name: "
+read expPath
+DIR=${experimentsDir}/${expPath}
+
+echo -e "${ORANGE} And now, ${lightCyan} the exact name of the file that contains the level-6 abundance table (ex: level-6-vsearch), without .csv extension: "
+read fileName
+
+echo -e "${ORANGE} Please specify ${lightCyan} the metadata column you want to analyze: "
+read metadataCol
+
+echo -e "${ORANGE} Please specify ${lightCyan} in which taxonomical level you want to make the analysis (With the first letter in UPPERCASE, Ex: Family. Remember, if you choose Genus level, Family-Genus taxonomies will be taken into account): "
+read taxLevelAnalyze
+
+echo -e "${ORANGE} Sometimes we don't want to make the analysis for all the groups that our metadata colum comprenhends. If this is your case, ${lightCyan} please write the sub-groups of your metadata column you want to analyze (ex: Tecfidera,Aubagio) ${ORANGE} But, if it is not, and you want to analyze all the groups, ${lightCyan} just write No:"
+
+read metadataColGroups
+
+echo -e "${ORANGE} Finally, ${lightCyan} enter a name for the Barplot graph title (ex: 16S MS vs Control)"
+read expName
+
+echo -e "${NC}"
+RscriptPath="/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/4_ScriptsR"
+Rscript="${RscriptPath}/AbundanceTables_Analysis_qiime2.R"
+
+GenusLevelFile="${DIR}/Taxonomic-Analysis/${fileName}.csv"
+
+
+#R --vanilla -f r-clargs-3.R --args runI=13 parmsC="params.csv" xN=33.45
+R --vanilla -f ${Rscript} --args parmsC=${GenusLevelFile} parmsfilenameC=${fileName} experimentNameC=${expName} metadataCol=${metadataCol} metaColgroup=${metadataColGroups} pathC="${DIR}/Taxonomic-Analysis" taxLevelAnalyzeC=${taxLevelAnalyze}
+
+
+
+

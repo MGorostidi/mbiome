@@ -1,0 +1,42 @@
+#!/bin/bash
+
+DIR="/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Experiments/All-16S-Qiime2"
+
+read pgm
+pgmNums=${pgm}
+
+qiime tools import \
+--type 'SampleData[SequencesWithQuality]' \
+--input-path ${DIR}/samples-manifest-pgm${pgmNums}.tsv \
+--input-format SingleEndFastqManifestPhred33V2 \
+--output-path ${DIR}/samples-pgm${pgmNums}.qza
+
+##_______3_______Generating a summary of demultiplexing results... *This fastq.gz files has not been demultiplexed cause each of them correspond to a specific sample. So they dont contain barcodes... 
+qiime demux summarize \
+  --i-data  ${DIR}/samples-pgm${pgmNums}.qza \
+  --o-visualization ${DIR}/samples-pgm${pgmNums}-demux.qzv
+qiime tools view ${DIR}/samples-pgm${pgmNums}-demux.qzv
+
+qiime dada2 denoise-pyro \
+  --i-demultiplexed-seqs ${DIR}/samples-pgm${pgmNums}.qza \
+  --p-trunc-len ${trunc_lenVal} \
+  --p-trim-left 15 \
+  --p-n-threads 4 \
+  --o-representative-sequences ${DIR}/Dada2_output/pgm${pgmNums}-rep-seqs-pyro-conTrun${trunc_lenVal}.qza \
+  --o-table ${DIR}/Dada2_output/pgm${pgmNums}-table-pyro-conTrun${trunc_lenVal}.qza \
+  --o-denoising-stats ${DIR}/Dada2_output/pgm${pgmNums}-stats-dada2-pyro-conTrun${trunc_lenVal}.qza \
+  --verbose
+
+#Visualizing Resulting data...
+#Converting DADA2 artifact .qza to .qzv
+trunc_lenVal="150"
+qiime feature-table summarize \
+  --i-table ${DIR}/Dada2_output/pgm${pgmNums}-table-pyro-conTrun${trunc_lenVal}.qza \
+  --o-visualization ${DIR}/Dada2_output/pgm${pgmNums}-table-pyro-conTrun${trunc_lenVal}.qzv \
+  --m-sample-metadata-file ${DIR}/samples-metadata-pgm${pgmNums}.tsv
+qiime feature-table tabulate-seqs \
+  --i-data ${DIR}/Dada2_output/pgm${pgmNums}-rep-seqs-pyro-conTrun${trunc_lenVal}.qza \
+  --o-visualization ${DIR}/Dada2_output/pgm${pgmNums}-rep-seqs-pyro-conTrun${trunc_lenVal}.qzv
+qiime metadata tabulate \
+  --m-input-file ${DIR}/Dada2_output/pgm${pgmNums}-stats-dada2-pyro-conTrun${trunc_lenVal}.qza \
+  --o-visualization ${DIR}/Dada2_output/pgm${pgmNums}-stats-dada2-pyro-conTrun${trunc_lenVal}.qzv

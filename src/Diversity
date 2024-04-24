@@ -1,0 +1,91 @@
+#!/bin/bash
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+
+cd ${DIR}
+
+echo -e "${ORANGE} Please enter if the sequenciation has been IonTorrent (then write pyro) or if it has been through Illumina (write if it has been paired or single). ${lightCyan} Options (pyro, paired, single):"
+read seqType
+
+################___Diversity Analysis: 
+echo -e "${Purple}Starting Diversity Analysis and Alpha rarefaction...${NC}"
+mkdir DiversityAnalysis
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences ${DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+  --o-alignment ${DIR}/DiversityAnalysis/aligned-rep-seqs-${seqType}.qza \
+  --o-masked-alignment ${DIR}/DiversityAnalysis/masked-aligned-rep-seqs-${seqType}.qza \
+  --o-tree ${DIR}/DiversityAnalysis/unrooted-tree-dada2-${seqType}.qza \
+  --o-rooted-tree ${DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza
+
+echo -e "${ORANGE} Enter sampling depth value, based on the list of values in the 'Interactive Sample Detail'. You should choose a value that is as high as possible (so you retain more sequences per sample) while excluding as few samples as possible.${NC} "
+
+qiime tools view ${DIR}/Dada2_output/table-${seqType}.qzv
+echo -e "${lightCyan} Enter sampling depth value:"
+read sampling_depthVal
+echo -e "${Purple} Starting Diversity Analysis...${NC} "
+##Alpha diversity analysis...
+## Core-metrics
+qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny ${DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza \
+  --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
+  --p-sampling-depth ${sampling_depthVal} \
+  --m-metadata-file ${DIR}/samples-metadata.tsv \
+  --output-dir core-metrics-results-dada2-${seqType}
+
+##Alpha and Beta diversities with Metadata Categories
+#Correlation between alpha-diversity and metadata categories
+#Shannon
+qiime diversity alpha-group-significance \
+--i-alpha-diversity core-metrics-results-dada2-${seqType}/shannon_vector.qza \
+ --m-metadata-file ${DIR}/samples-metadata.tsv \
+--o-visualization core-metrics-results-dada2-${seqType}/shannon-group-significance.qzv
+#richness
+qiime diversity alpha-group-significance \
+--i-alpha-diversity core-metrics-results-dada2-${seqType}/faith_pd_vector.qza \
+--m-metadata-file ${DIR}/samples-metadata.tsv \
+--o-visualization core-metrics-results-dada2-${seqType}/faith-pd-group-significance.qzv
+#evenness
+qiime diversity alpha-group-significance \
+--i-alpha-diversity core-metrics-results-dada2-${seqType}/evenness_vector.qza \
+--m-metadata-file ${DIR}/samples-metadata.tsv \
+--o-visualization core-metrics-results-dada2-${seqType}/evenness-group-significance.qzv
+#Correlation between beta-diversity and metadata categories
+#The category to test is set in --m-metadata-category
+
+qiime diversity beta-group-significance \
+--i-distance-matrix core-metrics-results-dada2-${seqType}/unweighted_unifrac_distance_matrix.qza \
+--m-metadata-file ${DIR}/samples-metadata.tsv \ 
+--m-metadata-column ms-type \
+--o-visualization core-metrics-results-dada2-${seqType}/unweighted-unifrac-mstype-significance.qzv \
+--p-pairwise
+
+mv core-metrics-results-dada2-${seqType} ${DIR}/DiversityAnalysis
+
+##Alpha Rarefaction plotting...
+echo -e "${ORANGE} Now you need to provide a value for max-depth in order to perform the Alpha Rarefaction step. This value has to be defined by reviewing the “Frequency per sample” information presented in the table.qzv... In general, choosing a value that is somewhere around the median frequency seems to work well, but you may want to increase that value if the lines in the resulting rarefaction plot don’t appear to be leveling out, or decrease that value if you seem to be losing many of your samples due to low total frequencies closer to the minimum sampling depth than the maximum sampling depth.${NC}"
+
+qiime tools view ${DIR}/Dada2_output/table-${seqType}.qzv
+
+echo -e "${lightCyan} Enter max-depth value:"
+read max_depthVal
+echo -e "${Purple} Starting Alpha Rarefaction...${NC} "
+mkdir Alpha-rarefaction
+#Alpha rarefaction --p-max-depth is set based on the median in table.qzv
+qiime diversity alpha-rarefaction \
+  --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
+  --i-phylogeny ${DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza \
+  --p-max-depth ${max_depthVal} \
+  --m-metadata-file ${DIR}/samples-metadata.tsv \
+  --o-visualization Alpha-rarefaction/alpha-rarefaction-dada2-${seqType}.qzv
+
+
+

@@ -1,0 +1,96 @@
+#!/bin/bash
+
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+
+################___We need the truncating and trimming parameters, so we will ask for them:
+echo -e "${lightCyan} Enter truncating length for Forward sequences"
+read trunc_forward
+echo -e "${lightCyan} Enter truncating length for Reverse sequences"
+read trunc_reverse
+echo -e "${lightCyan} Enter trimming length for Forward sequences"
+read trim_forward
+echo -e "${lightCyan} Enter trimming length for Reverse sequences"
+read trim_reverse
+
+echo -e "${NC}"
+#Move to the directory path:
+cd ${DIR}
+
+################################### DADA 2 ##############################################
+mkdir Dada2_output
+
+###### DADA 2 paired con Trunc Len  ###########
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs ${DIR}/samples.qza\
+  --p-trunc-len-f ${trunc_forward} \
+  --p-trunc-len-r ${trunc_reverse} \
+  --p-trim-left-f ${trim_forward} \
+  --p-trim-left-r ${trim_reverse} \
+  --p-n-threads 4 \
+  --o-representative-sequences ${DIR}/Dada2_output/rep-seqs-paired.qza \
+  --o-table ${DIR}/Dada2_output/table-paired.qza \
+  --o-denoising-stats ${DIR}/Dada2_output/stats-dada2-paired.qza \
+  --verbose
+
+
+#Visualizing Resulting data...
+#Converting DADA2 artifact .qza to .qzv
+qiime feature-table summarize \
+  --i-table ${DIR}/Dada2_output/table-paired.qza \
+  --o-visualization ${DIR}/Dada2_output/table-paired.qzv \
+  --m-sample-metadata-file ${DIR}/samples-metadata.tsv
+
+qiime feature-table tabulate-seqs \
+  --i-data ${DIR}/Dada2_output/rep-seqs-paired.qza \
+  --o-visualization ${DIR}/Dada2_output/rep-seqs-paired.qzv
+
+qiime metadata tabulate \
+  --m-input-file ${DIR}/Dada2_output/stats-dada2-paired.qza \
+  --o-visualization ${DIR}/Dada2_output/stats-dada2-paired.qzv
+
+echo "DADA2 performed"
+
+
+# Create report with the parameters used:
+echo -e "${Purple} Creating summary report..."
+echo "This is a summary report of the parameters used in DADA2 step: 
+                        Truncating Length for Forward sequences: ${trunc_forward}
+                        Truncating Length for Reverse sequences: ${trunc_reverse}
+                        Trimming Length for Forward sequences: ${trim_forward}
+                        Trimming Length for Reverse sequences: ${trim_reverse}" >| ${DIR}/Dada2_output/DADA2_parameters_report.txt
+
+
+# Ask if the DADA2 step is wanted to be repeated:
+echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each pgm run:"
+
+#visualize stats .qzv
+qiime tools view ${DIR}/Dada2_output/stats-dada2-paired.qzv
+
+
+echo -e "${ORANGE}Once you have vizualize the statistic table... ${lightCyan} Do you want to re-run dada2? (Write Yes or No)"
+read repeatDada2
+   
+if test ${repeatDada2} == "Yes"
+ then 
+    bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IL_Primers_Dada2
+
+elif test ${repeatDada2} == "No"
+ 
+ then
+    bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/TaxonomicClassification
+fi
+
+
+
+
+

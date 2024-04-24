@@ -1,0 +1,110 @@
+#!/bin/bash
+
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+
+#Ask for pgm ID numbers
+echo -e "${lightCyan}Now please, enter again the numbers of PGM sequenciations (ex: 181,182,201):"
+        read pgmNums
+
+#Convert pgm numbers to vector
+my_string=$pgmNums
+my_array=($(echo $my_string | tr "," "\n"))
+
+################___We need the truncating parameter, so we will ask for it:
+echo -e "${lightCyan} Enter truncating length"
+read trunc_lenVal
+
+echo -e "${NC}"
+#Move to the directory path:
+cd ${DIR}
+
+################################### DADA 2 ##############################################
+mkdir Dada2_output
+
+ for pgmNums in "${my_array[@]}"
+  do
+####### DADA 2 Pyro con Trunc Len  ###########
+
+qiime dada2 denoise-pyro \
+  --i-demultiplexed-seqs ${DIR}/samples-pgm${pgmNums}.qza \
+  --p-trunc-len ${trunc_lenVal} \
+  --p-trim-left 15 \
+  --p-n-threads 4 \
+  --o-representative-sequences ${DIR}/Dada2_output/pgm${pgmNums}-rep-seqs-pyro.qza \
+  --o-table ${DIR}/Dada2_output/pgm${pgmNums}-table-pyro.qza \
+  --o-denoising-stats ${DIR}/Dada2_output/pgm${pgmNums}-stats-dada2-pyro.qza \
+  --verbose
+
+#Visualizing Resulting data...
+#Converting DADA2 artifact .qza to .qzv
+
+qiime feature-table summarize \
+  --i-table ${DIR}/Dada2_output/pgm${pgmNums}-table-pyro.qza \
+  --o-visualization ${DIR}/Dada2_output/pgm${pgmNums}-table-pyro.qzv \
+  --m-sample-metadata-file ${DIR}/samples-metadata-pgm${pgmNums}.tsv
+qiime feature-table tabulate-seqs \
+  --i-data ${DIR}/Dada2_output/pgm${pgmNums}-rep-seqs-pyro.qza \
+  --o-visualization ${DIR}/Dada2_output/pgm${pgmNums}-rep-seqs-pyro.qzv
+qiime metadata tabulate \
+  --m-input-file ${DIR}/Dada2_output/pgm${pgmNums}-stats-dada2-pyro.qza \
+  --o-visualization ${DIR}/Dada2_output/pgm${pgmNums}-stats-dada2-pyro.qzv
+
+     echo "DADA2 performed for $pgmNums PGM SEQUENCE"
+  done
+
+
+# Create report with the parameters used:
+echo -e "${Purple} Creating summary report..."
+echo "This is a summary report of the parameters used in DADA2 step: 
+                        Truncating Length: ${trunc_lenVal}
+                        Trimming Length: 15 (due to be using the 16S Kit)" >| ${DIR}/Dada2_output/DADA2_parameters_report.txt
+
+
+
+echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each pgm run:${NC}"
+
+for pgmNums in "${my_array[@]}"
+  do
+    qiime tools view ${DIR}/Dada2_output/pgm${pgmNums}-stats-dada2-pyro.qzv
+done
+
+echo -e "${ORANGE}Once you have vizualize all the statistic tables... ${lightCyan} Do you want to re-run dada2? (Write Yes or No)"
+read repeatDada2
+
+if test ${repeatDada2} == "Yes"
+ then 
+
+    bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_16Skit_Dada2_different_seqRuns
+elif test ${repeatDada2} == "No"
+    then
+    echo -e "${ORANGE}Now we have run DADA2, we will have 3 files for each pgm. In order to continue with the taxonomic analysis, we need to merge table and rep-seqs files."
+    echo "Please, edit manually the 'mergeEdit' file that you will find in ./Steps_and_Scripts/3_Qiime2_Pipelines/src folder.${lightCyan} Once you have already modified it, please write Yes:"
+    read mergeDone
+
+    if test ${mergeDone} == "Yes"
+        then 
+        #nano /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/mergeEdit
+
+        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/mergeEdit
+    fi
+
+echo -e "${ORANGE} Make sure the rep-seqs-merged.qza and the table-merged.qza files have been created. Now we will perform the Taxonomic analysis:"
+
+bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/TaxonomicClassification
+fi
+
+
+
+
+
+

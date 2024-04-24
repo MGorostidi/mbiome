@@ -1,0 +1,39 @@
+#!/bin/bash
+
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+
+#Ask for pgm ID numbers
+echo -e "${lightCyan} Now please, enter the number of your PGM sequenciation (ex: 181):"
+        read pgmNum
+
+##_______2_______Converting .FastQ.gz to Artifacts .qza...
+qiime tools import \
+--type 'SampleData[SequencesWithQuality]' \
+--input-path ${DIR}/samples-manifest-pgm${pgmNum}.tsv \
+--input-format SingleEndFastqManifestPhred33V2 \
+--output-path ${DIR}/samples-pgm${pgmNum}.qza
+
+##_______3_______Generating a summary of demultiplexing results... *This fastq.gz files has not been demultiplexed cause each of them correspond to a specific sample. So they dont contain barcodes... 
+qiime demux summarize \
+  --i-data  ${DIR}/samples-pgm${pgmNum}.qza \
+  --o-visualization ${DIR}/samples-pgm${pgmNum}-demux.qzv
+
+     echo "Welcome $pgmNum PGM SEQUENCE"
+
+echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. Take a look to the graph that has been opened up."
+
+qiime tools view ${DIR}/samples-pgm${pgmNum}-demux.qzv
+
+bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_16Skit_Dada2
+
+

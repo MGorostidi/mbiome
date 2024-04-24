@@ -1,0 +1,29 @@
+#!/bin/bash
+
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+
+
+    echo -e "${ORANGE}Now we have run DADA2, we will have 3 files for each pgm. In order to continue with the taxonomic analysis, we need to merge table and rep-seqs files."
+    echo -e "${ORANGE}Please, edit manually the 'mergeEdit' file that you will find in ./Steps_and_Scripts/3_Qiime2_Pipelines/src folder. ${lightCyan} Once you have already modified it, please write Yes:"
+    read mergeDone
+
+    if test ${mergeDone} == "Yes"
+        then 
+        #nano /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/mergeEdit
+
+        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/mergeEdit
+    fi
+
+echo -e "${ORANGE} Make sure the rep-seqs-merged.qza and the table-merged.qza files have been created. Now we will perform the Taxonomic analysis:"
+
+bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/TaxonomicClassification

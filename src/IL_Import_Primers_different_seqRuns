@@ -1,0 +1,72 @@
+#!/bin/bash
+
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+
+#Ask for seq ID numbers
+echo -e "Like in IonTorrent, that uses pgm codes for identifying files from different sequentiations, we would use an own code, called Seq. Therefore, you should have your fastqfiles with a SeqX at the beginning (Ex: Seq1_IDEM01-1-G_S13_L001_R1_001.fastq.gz). Remember that you should have prepared a samples-manifest-seqX.tsv for each Seq (being X the number).${lightCyan} Now please, enter the numbers of SEQ sequenciations (ex: 1,2,3):"
+read seqNums
+
+echo -e "${ORANGE} Illumina , unlike IonTorrent, uses two primer, forward and reverse. We need to remove them. ${lightCyan} Please, write the nucleotide sequence of Forward Primer:"
+read forwardPrimer
+echo -e "Now please, write the nucleotide sequence of Reverse Primer:"
+read reversePrimer
+
+#Convert seq numbers to vector
+my_string=$seqNums
+my_array=($(echo $my_string | tr "," "\n"))
+
+ for seqNums in "${my_array[@]}"
+  do
+    ##_______2_______Converting .FastQ.gz to Artifacts .qza...
+    qiime tools import \
+    --type 'SampleData[PairedEndSequencesWithQuality]' \
+    --input-path ${DIR}/samples-manifest-seq${seqNums}.tsv \
+    --input-format PairedEndFastqManifestPhred33V2 \
+    --output-path ${DIR}/samples-seq${seqNums}.qza
+
+
+#    qiime cutadapt trim-paired \
+#     --p-cores 4 \
+#     --i-demultiplexed-sequences ${DIR}/samples-seq${seqNums}.qza \
+#     --p-anywhere-f ${forwardPrimer} \
+#     --p-anywhere-r ${reversePrimer} \
+#     --p-match-read-wildcards \
+#     --p-match-adapter-wildcards \
+#     --p-discard-untrimmed \
+#     --o-trimmed-sequences ${DIR}/samples-seq${seqNums}-trimmed.qza \
+#     --quiet
+#
+#
+#    #####recomiendan https://forum.qiime2.org/t/some-questions-about-cutadapt-demux-paired/19223/3
+#    #  --p-match-read-wildcards \
+#    #  --p-match-adapter-wildcards \
+#    #  --p-discard-untrimmed \
+
+    ##_______3_______Generating a summary of demultiplexing results... *This fastq.gz files has not been demultiplexed cause each of them correspond to a specific sample. So they dont contain barcodes... 
+    qiime demux summarize \
+      --i-data  ${DIR}/samples-seq${seqNums}.qza \
+      --o-visualization ${DIR}/samples-seq${seqNums}-demux.qzv
+
+    #qiime tools view ${DIR}/samples-seq${seq}-demux.qzv
+
+     echo "Welcome $seqNums SEQ SEQUENCE"
+  done
+
+echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. When we work with more than one seq, we need to decide the truncating length based on all the .qzv samples created. Take a look to all the graphs (one for each seq) that have been opened up. (You will need to quit the viewer for the next file to open)"
+
+for seqNums in "${my_array[@]}"
+do
+    qiime tools view ${DIR}/samples-seq${seqNums}-demux.qzv
+done
+
+bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IL_Primers_Dada2_different_seqRuns
