@@ -2,12 +2,12 @@
 
 source ../../initialize_parameters.sh
 
-#We store current path:
+# Store current path:
 CURRENT_DIR=$PWD
 
 echo -e "${ORANGE}Please, assure that you have a sample-manifest.tsv file prepared."
 
-# Importing samples
+# Importing samples to Qiime2
 qiime tools import \
   --type 'SampleData[SequencesWithQuality]' \
   --input-path ${CURRENT_DIR}/samples-manifest.tsv \
@@ -22,6 +22,7 @@ echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through 
 
 qiime tools view ${CURRENT_DIR}/samples-demux.qzv
 
+# Perform Dada2
 bash $DIR/src/IT_16Skit_Dada2
 
 
