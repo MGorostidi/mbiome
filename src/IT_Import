@@ -20,6 +20,7 @@ qiime demux summarize \
 
 echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. Take a look to the graph that has been opened up."
 
+# Visualize Quality graph
 qiime tools view ${CURRENT_DIR}/samples-demux.qzv
 
 # Perform Dada2
