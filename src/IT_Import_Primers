@@ -2,20 +2,20 @@
 
 source ../../initialize_parameters.sh
 
-#We store current path:
+# Store current path:
 CURRENT_DIR=$PWD
 
 echo -e "${ORANGE}Please, assure that you have a sample-manifest.tsv file prepared."
 
-##_______2_______Converting .FastQ.gz to Artifacts .qza...
+# Importing samples to Qiime2
 qiime tools import \
---type 'SampleData[SequencesWithQuality]' \
---input-path ${CURRENT_DIR}/samples-manifest.tsv \
---input-format SingleEndFastqManifestPhred33V2 \
---output-path ${CURRENT_DIR}/samples.qza
+  --type 'SampleData[SequencesWithQuality]' \
+  --input-path ${CURRENT_DIR}/samples-manifest.tsv \
+  --input-format SingleEndFastqManifestPhred33V2 \
+  --output-path ${CURRENT_DIR}/samples.qza
 
 
-echo -e "${ORANGE} Since you have performed the sequencing with commercial primers, 
+echo -e "${ORANGE}Since you have performed the sequencing with commercial primers, 
 you now have two options for removing the sequences: 
 (1) If you already know the nucleotide sequence of the primers, we can remove those sequences usign Cutadapt.
 (2) If we don't know the specific sequence, we can also use the trimming function of Dada2 for removing the first part of the graph.
@@ -25,7 +25,7 @@ read cutadapt
 
 # Apply cutadapt
 if test ${cutadapt} == "Yes"; then
-  echo -e "${ORANGE} Since the sequencing has been performed using IonTorrent sequencer, 
+  echo -e "${ORANGE}Since the sequencing has been performed using IonTorrent sequencer, 
   no paired sequencing has been done, so only the Forward primer will be removed: "
   # Reference for this decision: https://forum.qiime2.org/t/cutadapt-in-ion-torrent-sequences/22165/9
   
@@ -49,7 +49,12 @@ if test ${cutadapt} == "Yes"; then
       --p-discard-untrimmed \
       --o-trimmed-sequences ${CURRENT_DIR}/samples.qza \
       --quiet
-    
+
+    # Parameters recommended in https://forum.qiime2.org/t/some-questions-about-cutadapt-demux-paired/19223/3
+    #  --p-match-read-wildcards \
+    #  --p-match-adapter-wildcards \
+    #  --p-discard-untrimmed \  
+      
     # Create report with the parameters used:
     echo -e "${PURPLE} Creating summary report..."
     echo "This is a summary report of the parameters used in Trimming Preprocessing step: 
@@ -94,4 +99,5 @@ qiime demux summarize \
   --i-data  ${CURRENT_DIR}/samples.qza \
   --o-visualization ${CURRENT_DIR}/samples.qzv
 
+# Perform Dada2
 bash $DIR/src/IT_Primers_Dada2
