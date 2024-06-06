@@ -43,7 +43,7 @@ if test ${cutadapt} == "Yes"; then
     qiime cutadapt trim-single \
       --p-cores 4 \
       --i-demultiplexed-sequences ${CURRENT_DIR}/samples.qza \
-      --p-front-f ${forwardPrimer} \
+      --p-front ${forwardPrimer} \
       --p-match-read-wildcards \
       --p-match-adapter-wildcards \
       --p-discard-untrimmed \
@@ -72,15 +72,15 @@ if test ${cutadapt} == "Yes"; then
     qiime cutadapt trim-single \
       --p-cores 4 \
       --i-demultiplexed-sequences ${CURRENT_DIR}/samples.qza \
-      --p-front-f ${forwardPrimer1} \
-      --p-front-f ${forwardPrimer2} \
+      --p-front ${forwardPrimer1} \
+      --p-front ${forwardPrimer2} \
       --p-match-read-wildcards \
       --p-match-adapter-wildcards \
       --p-discard-untrimmed \
       --o-trimmed-sequences ${CURRENT_DIR}/samples.qza \
       --quiet
 
-    #Parameters recommended in https://forum.qiime2.org/t/some-questions-about-cutadapt-demux-paired/19223/3
+    # Parameters recommended in https://forum.qiime2.org/t/some-questions-about-cutadapt-demux-paired/19223/3
     #  --p-match-read-wildcards \
     #  --p-match-adapter-wildcards \
     #  --p-discard-untrimmed \
