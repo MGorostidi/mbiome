@@ -1,91 +1,147 @@
 #!/bin/bash
-################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
-
-lightCyan='\033[1;36m'
-RED='\033[0;31m'
-Purple='\033[0;35m'
-White='\033[1;37m'
-ORANGE="\033[0;33m"
-NC='\033[0m' # No Color
+source ../../initialize_parameters.sh
 
 #We store current path:
-DIR=$PWD
+CURRENT_DIR=$PWD
 
-cd ${DIR}
-
-echo -e "${ORANGE} Please enter if the sequenciation has been IonTorrent (then write pyro) or if it has been through Illumina (write if it has been paired or single). ${lightCyan} Options (pyro, paired, single):"
+echo -e "${ORANGE} Please enter if the sequenciation has been IonTorrent (then write pyro) or if it has been through Illumina (write if it has been paired or single). ${LIGHTCYAN} Options (pyro, paired, single):"
 read seqType
 
-################___Diversity Analysis: 
-echo -e "${Purple}Starting Diversity Analysis and Alpha rarefaction...${NC}"
-mkdir DiversityAnalysis
+#Diversity Analysis... 
+echo -e "${PURPLE}Starting Diversity Analysis and Alpha rarefaction...${NC}"
+mkdir $CURRENT_DIR/DiversityAnalysis
 qiime phylogeny align-to-tree-mafft-fasttree \
-  --i-sequences ${DIR}/Dada2_output/rep-seqs-${seqType}.qza \
-  --o-alignment ${DIR}/DiversityAnalysis/aligned-rep-seqs-${seqType}.qza \
-  --o-masked-alignment ${DIR}/DiversityAnalysis/masked-aligned-rep-seqs-${seqType}.qza \
-  --o-tree ${DIR}/DiversityAnalysis/unrooted-tree-dada2-${seqType}.qza \
-  --o-rooted-tree ${DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza
+  --i-sequences ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+  --o-alignment ${CURRENT_DIR}/DiversityAnalysis/aligned-rep-seqs-${seqType}.qza \
+  --o-masked-alignment ${CURRENT_DIR}/DiversityAnalysis/masked-aligned-rep-seqs-${seqType}.qza \
+  --o-tree ${CURRENT_DIR}/DiversityAnalysis/unrooted-tree-dada2-${seqType}.qza \
+  --o-rooted-tree ${CURRENT_DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza
 
 echo -e "${ORANGE} Enter sampling depth value, based on the list of values in the 'Interactive Sample Detail'. You should choose a value that is as high as possible (so you retain more sequences per sample) while excluding as few samples as possible.${NC} "
 
-qiime tools view ${DIR}/Dada2_output/table-${seqType}.qzv
-echo -e "${lightCyan} Enter sampling depth value:"
+qiime tools view ${CURRENT_DIR}/Dada2_output/table-${seqType}.qzv
+
+echo -e "${LIGHTCYAN} Enter sampling depth value:"
 read sampling_depthVal
-echo -e "${Purple} Starting Diversity Analysis...${NC} "
+
+echo -e "${PURPLE} Starting Diversity Alpha and Beta Analyses...${NC} "
 ##Alpha diversity analysis...
 ## Core-metrics
 qiime diversity core-metrics-phylogenetic \
-  --i-phylogeny ${DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza \
-  --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
+  --i-phylogeny ${CURRENT_DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
   --p-sampling-depth ${sampling_depthVal} \
-  --m-metadata-file ${DIR}/samples-metadata.tsv \
-  --output-dir core-metrics-results-dada2-${seqType}
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --output-dir core-metrics-results-dada2-${seqType}-sd$sampling_depthVal
 
 ##Alpha and Beta diversities with Metadata Categories
 #Correlation between alpha-diversity and metadata categories
 #Shannon
 qiime diversity alpha-group-significance \
---i-alpha-diversity core-metrics-results-dada2-${seqType}/shannon_vector.qza \
- --m-metadata-file ${DIR}/samples-metadata.tsv \
---o-visualization core-metrics-results-dada2-${seqType}/shannon-group-significance.qzv
+  --i-alpha-diversity core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/shannon_vector.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/shannon-group-significance.qzv
 #richness
 qiime diversity alpha-group-significance \
---i-alpha-diversity core-metrics-results-dada2-${seqType}/faith_pd_vector.qza \
---m-metadata-file ${DIR}/samples-metadata.tsv \
---o-visualization core-metrics-results-dada2-${seqType}/faith-pd-group-significance.qzv
+  --i-alpha-diversity core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/faith_pd_vector.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/faith-pd-group-significance.qzv
 #evenness
 qiime diversity alpha-group-significance \
---i-alpha-diversity core-metrics-results-dada2-${seqType}/evenness_vector.qza \
---m-metadata-file ${DIR}/samples-metadata.tsv \
---o-visualization core-metrics-results-dada2-${seqType}/evenness-group-significance.qzv
-#Correlation between beta-diversity and metadata categories
-#The category to test is set in --m-metadata-category
+  --i-alpha-diversity core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/evenness_vector.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/evenness-group-significance.qzv
 
-qiime diversity beta-group-significance \
---i-distance-matrix core-metrics-results-dada2-${seqType}/unweighted_unifrac_distance_matrix.qza \
---m-metadata-file ${DIR}/samples-metadata.tsv \ 
---m-metadata-column ms-type \
---o-visualization core-metrics-results-dada2-${seqType}/unweighted-unifrac-mstype-significance.qzv \
---p-pairwise
+function run_beta_group_significance() {
 
-mv core-metrics-results-dada2-${seqType} ${DIR}/DiversityAnalysis
+  echo -e "${LIGHTCYAN} Write the exact name of the metadata column to analyze (ex: ms-type)"
+  read metadata_column 
+  #Correlation between beta-diversity and metadata categories
+  #The category to test is set in --m-metadata-column
+  echo -e "${PURPLE} Running beta-group-significance for $metadata_column..."
+  qiime diversity beta-group-significance \
+    --i-distance-matrix core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/unweighted_unifrac_distance_matrix.qza \
+    --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+    --m-metadata-column $metadata_column \
+    --o-visualization core-metrics-results-dada2-${seqType}-sd$sampling_depthVal/unweighted-unifrac-$metadata_column-significance.qzv \
+    --p-pairwise
+}
+
+echo -e "${ORANGE} You might want to analyze the beta-group-significance of a specific metadata column.. ${LIGHTCYAN} Please, write Yes or No:"
+read beta_group_significance
+
+if test ${beta_group_significance} == "Yes"; then
+
+  run_beta_group_significance
+
+  rerun_beta_group_significance="Yes"
+  while [ "$rerun_beta_group_significance" == "Yes" ]; do
+    echo -e "${ORANGE} Do you want to re-run it with another metadata column? ${LIGHTCYAN} Please, write Yes or No:"
+    read rerun_beta_group_significance
+
+    if test ${rerun_beta_group_significance} == "Yes"; then
+      run_beta_group_significance
+    fi
+  done 
+fi
+
+echo -e "${ORANGE} Based on the chosen Sampling depth value, a filtering of the samples will be done and a "filtered" taxa-barplot will be generated." 
+echo -e "${LIGHTCYAN} Please, write again the Analysis type (16S or ITS) you are performing.."
+read analysisType
+echo -e "${PURPLE} Filtering samples by Sampling depth value and creating a filtered taxa-barplot:"
+
+
+qiime feature-table filter-samples \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
+  --p-min-frequency $sampling_depthVal \
+  --o-filtered-table ${CURRENT_DIR}/Dada2_output/table-${seqType}-filtered-sd$sampling_depthVal.qza
+
+if test $analysisType == '16S'; then
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}-filtered-sd$sampling_depthVal.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-vsearch-filtered-sd$sampling_depthVal.qzv
+
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}-filtered-sd$sampling_depthVal.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-blast-filtered-sd$sampling_depthVal.qzv
+
+
+elif test $analysisType == 'ITS'; then
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}-filtered-sd$sampling_depthVal.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-vsearch-filtered-sd$sampling_depthVal.qzv
+
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}-filtered-sd$sampling_depthVal.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-blast-filtered-sd$sampling_depthVal.qzv
+fi
+
+mv core-metrics-results-dada2-${seqType}-sd$sampling_depthVal ${CURRENT_DIR}/DiversityAnalysis
 
 ##Alpha Rarefaction plotting...
 echo -e "${ORANGE} Now you need to provide a value for max-depth in order to perform the Alpha Rarefaction step. This value has to be defined by reviewing the “Frequency per sample” information presented in the table.qzv... In general, choosing a value that is somewhere around the median frequency seems to work well, but you may want to increase that value if the lines in the resulting rarefaction plot don’t appear to be leveling out, or decrease that value if you seem to be losing many of your samples due to low total frequencies closer to the minimum sampling depth than the maximum sampling depth.${NC}"
 
-qiime tools view ${DIR}/Dada2_output/table-${seqType}.qzv
+qiime tools view ${CURRENT_DIR}/Dada2_output/table-${seqType}.qzv
 
-echo -e "${lightCyan} Enter max-depth value:"
+echo -e "${LIGHTCYAN} Enter max-depth value:"
 read max_depthVal
-echo -e "${Purple} Starting Alpha Rarefaction...${NC} "
-mkdir Alpha-rarefaction
+echo -e "${PURPLE} Starting Alpha Rarefaction...${NC} "
+mkdir $CURRENT_DIR/Alpha-rarefaction
 #Alpha rarefaction --p-max-depth is set based on the median in table.qzv
 qiime diversity alpha-rarefaction \
-  --i-table ${DIR}/Dada2_output/table-${seqType}.qza \
-  --i-phylogeny ${DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
+  --i-phylogeny ${CURRENT_DIR}/DiversityAnalysis/rooted-tree-dada2-${seqType}.qza \
   --p-max-depth ${max_depthVal} \
-  --m-metadata-file ${DIR}/samples-metadata.tsv \
-  --o-visualization Alpha-rarefaction/alpha-rarefaction-dada2-${seqType}.qzv
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization Alpha-rarefaction/alpha-rarefaction-dada2-${seqType}-$max_depthVal.qzv
 
-
-
+echo -e "${PURPLE}Going forward to Picrust2 Functional analysis..."
+bash $DIR/src/PICRUSTpipeline
