@@ -1,89 +1,79 @@
 #!/bin/bash
 
-################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
-
-lightCyan='\033[1;36m'
-RED='\033[0;31m'
-Purple='\033[0;35m'
-White='\033[1;37m'
-ORANGE="\033[0;33m"
-NC='\033[0m' # No Color
+source ../../initialize_parameters.sh
 
 #We store current path:
-DIR=$PWD
+CURRENT_DIR=$PWD
 
-#Ask for pgm ID numbers
-echo -e "${lightCyan}Now please, enter again the number of your PGM sequenciation (ex: 181):"
-        read pgmNum
-################___We need the truncating parameter, so we will ask for it:
-echo -e "${lightCyan} 
-Enter truncating length"
+# Visualize the quality graphs for decide the DADA2 parameters. 
+echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples.qzv) and decide the length of reads, 
+so we can trunc by quality. Take a look to the graph that has been opened up."
+
+echo -e "$ORANGE If you have previously decided to perform CUTADAPT because you knew the exact primer sequences,
+ now you should choose a 0 (zero) in the trimming parameters. If not, you should select a trimming length that 
+ removes the lower quality base pairs from the left of the quality graph."
+
+# Visualize Quality graph
+qiime tools view ${CURRENT_DIR}/samples.qzv
+
+# Ask for truncating and trimming parameters:
+echo -e "${LIGHTCYAN} Enter truncating length"
 read trunc_lenVal
-echo -e "${lightCyan} 
-Enter trimming length"
+echo -e "${LIGHTCYAN} Enter trimming length"
 read trim_lenVal
 
+mkdir $CURRENT_DIR/Dada2_output
 
-echo -e "${NC}"
-#Move to the directory path:
-cd ${DIR}
-
-################################### DADA 2 ##############################################
-mkdir Dada2_output
-
-####### DADA 2 Pyro con Trunc Len  ###########
+# DADA2 step
+echo -e "${PURPLE}Performing Dada2...${NC}"
 qiime dada2 denoise-pyro \
-  --i-demultiplexed-seqs ${DIR}/samples-pgm${pgmNum}-trimmed.qza\
+  --i-demultiplexed-seqs ${CURRENT_DIR}/samples.qza\
   --p-trunc-len ${trunc_lenVal} \
   --p-trim-left ${trim_lenVal} \
   --p-n-threads 4 \
-  --o-representative-sequences ${DIR}/Dada2_output/rep-seqs-pyro.qza \
-  --o-table ${DIR}/Dada2_output/table-pyro.qza \
-  --o-denoising-stats ${DIR}/Dada2_output/stats-dada2-pyro.qza \
+  --o-representative-sequences ${CURRENT_DIR}/Dada2_output/rep-seqs-pyro.qza \
+  --o-table ${CURRENT_DIR}/Dada2_output/table-pyro.qza \
+  --o-denoising-stats ${CURRENT_DIR}/Dada2_output/stats-dada2-pyro.qza \
   --verbose
 
 #Visualizing Resulting data...
 #Converting DADA2 artifact .qza to .qzv
 qiime feature-table summarize \
-  --i-table ${DIR}/Dada2_output/table-pyro.qza \
-  --o-visualization ${DIR}/Dada2_output/table-pyro.qzv \
-  --m-sample-metadata-file ${DIR}/samples-metadata-pgm${pgmNum}.tsv
+  --i-table ${CURRENT_DIR}/Dada2_output/table-pyro.qza \
+  --o-visualization ${CURRENT_DIR}/Dada2_output/table-pyro.qzv \
+  --m-sample-metadata-file ${CURRENT_DIR}/samples-metadata.tsv
 qiime feature-table tabulate-seqs \
-  --i-data ${DIR}/Dada2_output/rep-seqs-pyro.qza \
-  --o-visualization ${DIR}/Dada2_output/rep-seqs-pyro.qzv
+  --i-data ${CURRENT_DIR}/Dada2_output/rep-seqs-pyro.qza \
+  --o-visualization ${CURRENT_DIR}/Dada2_output/rep-seqs-pyro.qzv
 qiime metadata tabulate \
-  --m-input-file ${DIR}/Dada2_output/stats-dada2-pyro.qza \
-  --o-visualization ${DIR}/Dada2_output/stats-dada2-pyro.qzv
-echo "DADA2 performed for $pgmNum PGM SEQUENCE"
+  --m-input-file ${CURRENT_DIR}/Dada2_output/stats-dada2-pyro.qza \
+  --o-visualization ${CURRENT_DIR}/Dada2_output/stats-dada2-pyro.qzv
 
 # Create report with the parameters used:
 echo -e "${Purple} Creating summary report..."
 echo "This is a summary report of the parameters used in DADA2 step: 
                         Truncating Length: ${trunc_lenVal}
-                        Trimming Length: ${trim_lenVal}" >| ${DIR}/Dada2_output/DADA2_parameters_report.txt
+                        Trimming Length: ${trim_lenVal}" >| ${CURRENT_DIR}/Dada2_output/DADA2_parameters_report.txt
 
 
 
 
-echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each pgm run:"
+# Ask if the DADA2 step needs to be repeated:
+echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each run run:"
 
-#visualize stats .qzv
-qiime tools view ${DIR}/Dada2_output/stats-dada2-pyro.qzv
-
+# Visualize stats .qzv
+qiime tools view ${CURRENT_DIR}/Dada2_output/stats-dada2-pyro.qzv
 
 echo -e "${ORANGE}Once you have vizualize the statistic table... ${lightCyan} Do you want to re-run dada2? (Write Yes or No)"
 read repeatDada2
    
+if test ${repeatDada2} == "Yes"; then 
+  echo -e "${PURPLE}Running DADA2 again..."
+  bash $DIR/src/IT_Primers_Dada2
 
-
-if test ${repeatDada2} == "Yes"
- then 
-    bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_Primers_Dada2
-
-elif test ${repeatDada2} == "No"
- 
- then
-    bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/TaxonomicClassification
+elif test ${repeatDada2} == "No"; then
+  echo -e "${PURPLE}Going forward to Taxonomic Classification..."
+  bash $DIR/src/TaxonomicClassification
 fi
 
 
