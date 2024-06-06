@@ -1,190 +1,52 @@
 #!/bin/bash
 
-################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+# Initialize parameters and functions:
+source initialize_parameters.sh
+source functions.sh
 
-lightCyan='\033[1;36m'
-RED='\033[0;31m'
-Purple='\033[0;35m'
-White='\033[1;37m'
-ORANGE="\033[0;33m"
-NC='\033[0m' # No Color
-
-#We initialize the experiment path:
-experimentsDir="/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Experiments"
-
-#Initialize some functions: 
-function createReport {
-    # think you are inside the file
-    # Change Here
-    local "$AnalysysName"
-    local "$kitPrimer"
-    local "$difSequenciations"
-    local "$sequencer"
-echo -e "${Purple} Creating summary report..."
-echo "This is a summary report of the steps followed in the ${AnalysysName} experiment: 
-                        DNA Amplification: ${kitPrimer}
-                        Sequencer: ${sequencer}
-                        Samples sequenced in different runs: ${difSequenciations}
-
-                        Steps:
-                        Since DNA was amplified by the 16S Metagenomic Kit, we don't know which are the exact primer sequences that need to be removed. Therefore, a trim-left of 15pb will be performed.
-                        Samples have been sequenced in IonTorrent PGM, so DADA2 step will be performed with denoise-pyro option, as recommended in Qiime2Forum. And truncating value will be chosen based on samples-demux.qzv
-                        Since samples groups have been sequenced in different runs, it is necessary to perform DADA2 separeately, for each run, and then merge the DADA2 output files, before Taxonomic classification." >| ${AnalysysName}_report.txt
-}
-
-
-function stepPerform {
-    echo -e "${ORANGE} Now everything is ready, please, select which step would you like to perform. Sometimes we will have some steps already done and we would like to start the analysis from an specific step and no from the beginning. So, we now have the chance of select the step:
-#1) Import
-#2) Dada2
-#2*) Merge
-#3) Taxonomy
-#4) Diversity
-#5) SplitTables
-#6) Picrust2
-#7) AbundanceAnalysis
-#8) Picrust2results
-#
-#Please select the step:${lightCyan}(Write one of the above names):"
-    read stepDecided
-    local "$kitPrimer"
-    local "$difSequenciations"
-    local "$sequencer"
-
-################# Import
-    if test ${stepDecided} == "Import"; then
-        if [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Kit" ] && [ ${difSequenciations} == "No" ]; then
-            echo -e "${Purple} Importing samples..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_Import
-        elif [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Kit" ] && [ ${difSequenciations} == "Yes" ]; then               
-            echo -e "${Purple} Importing samples from different sequencing runs..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_Import_different_seqRuns
-        elif [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "No" ]; then 
-            echo -e "${Purple} Importing samples..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_Import_Primers
-        elif [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "Yes" ]; then 
-            echo -e "${Purple} Importing samples from different sequencing runs..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_Import_Primers_different_seqRuns
-        
-        elif [ ${sequencer} == "IL" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "No" ]; then 
-            echo -e "${Purple} Importing samples..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IL_Import_Primers
-        elif [ ${sequencer} == "IL" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "Yes" ]; then 
-            echo -e "${Purple} Importing samples from different sequencing runs..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IL_Import_Primers_different_seqRuns
-        fi
-
-    elif test ${stepDecided} == "Dada2"; then
-        if [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Kit" ] && [ ${difSequenciations} == "No" ]; then
-            echo -e "${Purple} Importing samples..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_16Skit_Dada2
-        elif [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Kit" ] && [ ${difSequenciations} == "Yes" ]; then               
-            echo -e "${Purple} Importing samples from different sequencing runs..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_16Skit_Dada2_different_seqRuns
-        elif [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "No" ]; then 
-            echo -e "${Purple} Importing samples..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_Primers_Dada2
-        elif [ ${sequencer} == "IT" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "Yes" ]; then 
-            echo -e "${Purple} Importing samples from different sequencing runs..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IT_Primers_Dada2_different_seqRuns
-        
-        elif [ ${sequencer} == "IL" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "No" ]; then 
-            echo -e "${Purple} Importing samples..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IL_Primers_Dada2
-        elif [ ${sequencer} == "IL" ] && [ ${kitPrimer} == "Primers" ] && [ ${difSequenciations} == "Yes" ]; then 
-            echo -e "${Purple} Importing samples from different sequencing runs..."
-            bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/IL_Primers_Dada2_different_seqRuns
-        fi      
-
-    elif test ${stepDecided} == "Merge"; then 
-        echo -e "${Purple} Merging tables from different sequencing runs amplified with 16SKit..."
-        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/merge
-        
-
-    elif test ${stepDecided} == "Taxonomy"; then 
-        echo -e "${Purple} Starting taxonomical classification..."
-        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/TaxonomicClassification
-
-    elif test ${stepDecided} == "Diversity"; then 
-        echo -e "${Purple} Starting diversity analysis..."
-        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/Diversity
-
-    elif test ${stepDecided} == "SplitTables"; then 
-        echo -e "${Purple} Starting splitting tables step..."
-        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/SplitDada2Tables
-
-    elif test ${stepDecided} == "Picrust2"; then 
-        echo -e "${Purple} Startign Picrust2 functional analysis..."
-        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/PICRUSTpipeline
-
-     elif test ${stepDecided} == "AbundanceAnalysis"; then 
-        echo -e "${Purple} Startign Abundance table analysis using R..."
-        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/TaxonomicAnalysis_LefSe_RelAbundTables_byR
-
-     elif test ${stepDecided} == "Picrust2results"; then 
-        echo -e "${Purple} Startign Picrust2 results analysis..."
-        bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/PicrustAnalysis_statistics_byR
-
-    fi
-
-}
-
-
-
-
-#We need to know many thing before start:
-#echo -e "${ORANGE}Before we start... Give this analysis a experiment name: ${lightCyan}"
-#read AnalysysName
-
-echo -e "${ORANGE} Before we start... please answer the following questions:
-1) Which sequencer did you perform the sequenciation step with?${lightCyan}(Write IT for IonTorrent or IL for Illumina):"
+#We need to know many things before start:
+echo -e "${PURPLE} Before we start... please answer the following questions:
+${ORANGE}1) Which sequencer did you perform the sequencing with?${LIGHTCYAN}(Write IT for IonTorrent or IL for Illumina):"
 read sequencer
 
-echo -e "${ORANGE}2) Did you use the 16S Metagenomic Kit or other primers?${lightCyan}(Write Kit or Primers): "
+echo -e "${ORANGE}2) Did you use the 16S Metagenomic Kit from ThermoFisher or other primers?${LIGHTCYAN}(Write Kit or Primers): "
 read kitPrimer
 
-echo -e "${ORANGE}3) Do your samples come from different sequenciations (different PGM numbers)?${lightCyan}(Write Yes or No): "
+echo -e "${ORANGE}3) Do your samples come from different sequenciations?${LIGHTCYAN}(Write Yes or No): "
 read difSequenciations
 
-echo -e "${ORANGE} First of all, make sure you create a FOLDER FOR THE ANALYSIS (inside Experiments folder), no matter the name you choose. This folder needs to contain 2 additional files: samples-manifest.tsv and samples-metadata.tsv, that you should also had previously created (Note you will find examples of this files in ../Steps_and_Scripts/2_Create_tsvfiles folder. COLNAMES must not contain -, use _ instead. Remember to confirm the files validation in google sheets, by Keemei). The file samples-manifest.tsv contains the paths where the .fastq files need to be found and samples-metadata.tsv contains the metadata info of the chosen files/samples.${lightCyan}"
 
-#___Ask for the experiment name and check if the user has introduced a valid folder:
-while read -ep "Now, please, enter the experiment name of the analysis (exactly the same name of the folder created in Experiments path): " AnalysysName; do
-    if [ ! -d "${experimentsDir}/${AnalysysName}" ]; then
-         echo -e "${RED}${AnalysysName} does not exists - please enter a valid directory path${lightCyan}."
-    else
-        cd ${experimentsDir}/${AnalysysName}
-        break
-    fi
-done
- ##___Activate Qiime2 environment
-echo -e "${Purple}Activating Qiime2..."
-source /home/unidad/miniconda3/etc/profile.d/conda.sh
-conda activate qiime2-2022.2
-cd ${experimentsDir}/${AnalysysName}
+if [ ${difSequenciations} == "Yes" ]; then
+    echo -e "${ORANGE}First of all, make sure you create a FOLDER FOR THE ANALYSIS (inside EXPERIMENTS folder), no matter the name you choose. This folder needs to contain at least 2 files: samples-manifest.tsv and samples-metadata.tsv, that you should also had previously created. As your samples where sequenced in different runs, the main folder that you have already created for the experiment needs to contain a sample-metadata.tsv and a sample-manifest.tsv file for each run (Note that you will find examples inside EXAMPLE_FILES. Please, first read the important_notes file)."
 
+    echo -e "${ORANGE} Please, name them as follows:
+    samples-manifest-runXXX.tsv and samples-metadata-runXXX.tsv, being XXX the number you want (Ex: samples-manifest-run1.tsv). Besides that, it is necessary to have a global/general sample-metadata.tsv with the information of each sample, combining all the previous metadata files. ${LIGHTCYAN}"
 
-                      
-if [ ${sequencer} == "IT" ] && [ ${difSequenciations} == "Yes" ]; then
-    echo -e "${ORANGE}As your samples where sequenced in different runs, the main folder that you have already created for the experiment needs to contain a sample-metadata.tsv and a sample-manifest.tsv file for each PGM run (please, name them as follows: samples-manifest-pgmXXX.tsv and samples-metadata-pgmXXX.tsv). And, besides that, it is necessary to have a global/general sample-metadata.tsv with the information of each sample, combining all the previous metadata files. ${lightCyan}"
-    createReport
-    stepPerform
-
-elif [ ${sequencer} == "IT" ] && [ ${difSequenciations} == "No" ]; then
-    createReport
-    stepPerform            
-
-elif [ ${sequencer} == "IL" ] && [ ${difSequenciations} == "Yes" ]; then
-    echo -e "${ORANGE}As your samples where sequenced in different runs, the main folder that you have already created for the experiment needs to contain a sample-metadata.tsv and a sample-manifest.tsv file for each SEQ run (please, name them as follows: samples-manifest-seqXXX.tsv and samples-metadata-seqXXX.tsv). And, besides that, it is necessary to have a global/general sample-metadata.tsv with the information of each sample, combining all the previous metadata files. ${lightCyan}"
-    createReport
-    stepPerform
-
-elif [ ${sequencer} == "IL" ] && [ ${difSequenciations} == "No" ]; then
-    createReport
-    stepPerform   
+else
+    echo -e "${ORANGE}First of all, make sure you create a FOLDER FOR THE ANALYSIS (inside EXPERIMENTS folder), no matter the name you choose. This folder needs to contain at least 2 files: samples-manifest.tsv and samples-metadata.tsv, that you should also had previously created (Note that you will find examples inside EXAMPLE_FILES. Please, first read the important_notes file).${LIGHTCYAN}"
 
 fi
 
+
+# Ask for the experiment name and check if the user has introduced a valid folder:
+while read -ep "Now, please, enter the experiment name of the analysis (exactly the same name of the folder created in EXPERIMENTS path): " AnalysisName; do
+    if [ ! -d "${DIR_EXPERIMENTS}/${AnalysisName}" ]; then
+         echo -e "${RED}${AnalysisName} does not exists - please enter a valid directory path${LIGHTCYAN}."
+    else
+        cd ${DIR_EXPERIMENTS}/${AnalysisName}
+        break
+    fi
+done
+
+
+# Activate Qiime2 environment
+echo -e "${PURPLE}Activating Qiime2..."
+source $DIR_CONDA
+conda activate $QIIME2_ENV_NAME
+cd ${DIR_EXPERIMENTS}/${AnalysisName}
+
+createReport_experiment $AnalysisName $kitPrimer $difSequenciations $sequencer
+stepPerform $kitPrimer $difSequenciations $sequencer
 
 
 
