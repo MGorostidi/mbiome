@@ -28,13 +28,5 @@ for runNums in "${my_array[@]}"; do
       --o-visualization ${CURRENT_DIR}/samples-run${runNums}-demux.qzv
 done
 
-echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. When we work with more than one run, we need to decide the truncating length based on all the .qzv samples created. Take a look to all the graphs (one for each run) that have been opened up. (You will need to quit the viewer, pressing 'q', for the next file to open)"
-
-# Visualize Quality graphs
-for runNums in "${my_array[@]}"; do
-    echo -e "${PURPLE}Opening run $runNums .qzv visualization...${NC}"
-    qiime tools view ${CURRENT_DIR}/samples-run${runNums}-demux.qzv
-    done
-
 # Perform Dada2
 bash $DIR/src/IT_16Skit_Dada2_different_seqRuns
