@@ -69,16 +69,16 @@ bash initialize_parameters.sh
 - Green Genes DB will be used for 16S characterization. The database will be downloaded directly in the prepared .sh file. 
 - For ITS characterization instead, UNITE database will be used. This needs to be downloaded prior running download_databases.sh file. 
 
-(1) Download UNITE from: https://doi.plutof.ut.ee/doi/10.15156/BIO/2959336
-(2) Move the .tar.gz to DATABASES folder
+(1) Download UNITE from: https://doi.plutof.ut.ee/doi/10.15156/BIO/2959336<br>
+(2) Move the .tar.gz to DATABASES folder<br>
 (3) Once the .tar.gz file is saved, we can run the script: 
 
 ```shell
 bash download_databases.sh
 ```
-4. Import databases to Qiime2:
-(1) Since different versions of the databases can be downloaded, we need to write down the exact names of the files at the beginning of the import_databases.sh script. 
-You will find the exact lines that you need to modify in the file. 
+4. Import databases to Qiime2:<br>
+(1) Since different versions of the databases can be downloaded, we need to write down the exact names of the files at the beginning of the import_databases.sh script.<br>
+You will find the exact lines that you need to modify in the file.<br>
 (2) Now we can run the file: 
 ```shell
 bash import_databases.sh
