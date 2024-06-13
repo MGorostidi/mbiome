@@ -1,0 +1,16 @@
+# Information about the .tsv files that need to be created before running any experiment
+
+1. samples-manifest.tsv
+This file contains the paths where the .fastq files that we want to analyze can be found.
+
+2. samples-metadata.tsv
+This file contains the metadata information of the chosen files; any information can be added here. 
+
+*** IMPORTANT! ***
+
+Qiime2 created a plugin that can be used in Google Sheets, called Keemei, for making sure that the previous .tsv files are well created for Qiime2 use. So we recommend to use it. 
+Install Keemei:
+1) Log-in in your google account and open a Google Sheet
+2) Click on Extensions --> Add-ons --> Get-add-ons and search for Keemei and add it. 
+
+Once Keemei is installed you can just create both .tsv files in your Google Sheets and run Keemei to see if there is any error in the files (Note!: COLNAMES must not contain -, so use _ instead). If everything is ok, download the .tsv files and save them in your experiment folder. 
