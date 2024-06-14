@@ -1,8 +1,5 @@
 #!/bin/bash
 
-Purple='\033[0;35m'
-White='\033[1;37m'
-
 source initialize_parameters.sh
 
 ############## MODIFY THE FOLLOWING VARIABLES ###################
@@ -20,13 +17,13 @@ UNITEdynamicTXT="sh_taxonomy_qiime_ver10_dynamic_04.04.2024"
 
 ##################################################################
 
-echo -e "${Purple} Activating $QIIME2_ENV_NAME...${White}"
+echo -e "${PURPLE} Activating $QIIME2_ENV_NAME...${WHITE}"
 source $DIR_CONDA
 conda activate $QIIME2_ENV_NAME
 
 
 # GREEN GENES DATABASE FOR 16S:
-echo -e "${Purple} Importing Green Genes database to Qiime2...${White}"
+echo -e "${PURPLE} Importing Green Genes database to Qiime2...${WHITE}"
 
 qiime tools import \
   --input-path  $DIR_DATABASES/GreenGenes_DB/$GGfolder/trees/97_otus.tree \
@@ -45,7 +42,7 @@ qiime tools import \
 --output-path $DIR_DATABASES/GreenGenes_DB/$GGfolder/97_otu_taxonomy.qza
 
 # UNITE DATABASE FOR ITS:
-echo -e "${Purple} Importing UNITE database to Qiime2...${White}"
+echo -e "${PURPLE} Importing UNITE database to Qiime2...${WHITE}"
 
 qiime tools import \
 --type 'FeatureData[Sequence]' \
