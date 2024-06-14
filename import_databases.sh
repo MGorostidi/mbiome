@@ -21,7 +21,7 @@ UNITEdynamicTXT="sh_taxonomy_qiime_ver10_dynamic_04.04.2024"
 ##################################################################
 
 echo -e "${Purple} Activating $QIIME2_ENV_NAME...${White}"
-source /home/unidad/miniconda3/etc/profile.d/conda.sh
+source $DIR_CONDA
 conda activate $QIIME2_ENV_NAME
 
 
