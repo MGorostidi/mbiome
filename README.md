@@ -29,6 +29,10 @@ To get started, clone this repository and follow the instructions in the README 
 ```shell
 git clone https://github.com/MGorostidi/mbiome.git
 ```
+2. Move to the folder where the repository has been created: 
+```
+cd mbiome
+```
 
 ### Installing: 
 
