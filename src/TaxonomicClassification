@@ -11,9 +11,6 @@ read seqType
 echo -e "${LIGHTCYAN}Now please, specify the Analysis Type you are performing (please write ITS or 16S):"
 read analysisType
 
-echo -e "${LIGHTCYAN}Finally, select the taxonomic level in which do you want to work (write a number: phylum = 2, class = 3, order = 4, family = 5, genus = 6, species = 7):"
-read taxLevel
-
 mkdir ${CURRENT_DIR}/Taxonomic-Analysis
 
 if test ${analysisType} == "16S"; then
