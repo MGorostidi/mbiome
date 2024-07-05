@@ -1,0 +1,54 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+echo -e "${ORANGE}Since you have performed the sequencing with commercial primers, you now have two options for removing the sequences: 
+(1) If you already know the nucleotide sequence of the primers, we can remove those sequences usign Cutadapt.
+(2) If we don't know the specific sequence, we can also use the trimming function of Dada2 for removing the first part of the graph.
+The first option is more specific, but both of them can be done.
+In this context, ${LIGHTCYAN} do you want to perform Cutadapt (you know the forward and reverse primer nucleotide sequences)? (Write Yes or No)"
+read cutadapt
+
+# Apply cutadapt
+if test ${cutadapt} == "Yes"; then
+  echo -e "${LIGHTCYAN} Please, write the nucleotide sequence of Forward Primer:"
+  read forwardPrimer
+  echo -e "${LIGHTCYAN} Please, write the nucleotide sequence of Reverse Primer:"
+  read reversePrimer
+
+  echo -e "${PURPLE} Using cutadapt for removing primers sequences..."
+  qiime cutadapt trim-paired \
+    --p-cores 4 \
+    --i-demultiplexed-sequences ${CURRENT_DIR}/samples.qza \
+    --p-front-f ${forwardPrimer} \
+    --p-front-r ${reversePrimer} \
+    --p-match-read-wildcards \
+    --p-match-adapter-wildcards \
+    --p-discard-untrimmed \
+    --o-trimmed-sequences ${CURRENT_DIR}/samples.qza \
+    --quiet
+
+    # Parameters recommended in https://forum.qiime2.org/t/some-questions-about-cutadapt-demux-paired/19223/3
+    #  --p-match-read-wildcards \
+    #  --p-match-adapter-wildcards \
+    #  --p-discard-untrimmed \
+
+fi 
+
+# Create report with the parameters used:
+echo -e "${PURPLE} Creating summary report..."
+echo "This is a summary report of the parameters used in Trimming Preprocessing step: 
+                        Cutadapt yes or no: ${cutadapt}
+                        Forward Primer nucleotide sequence: ${forwardPrimer}
+                        Reverse Primer nucleotide sequence: ${reversePrimer}" >| ${CURRENT_DIR}/Import_trimming_parameters_report.txt
+
+
+qiime demux summarize \
+  --i-data  ${CURRENT_DIR}/samples.qza \
+  --o-visualization ${CURRENT_DIR}/samples.qzv
+
+# Perform Dada2 step
+bash $DIR/src/IL_Primers_Dada2
