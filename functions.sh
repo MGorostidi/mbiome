@@ -45,17 +45,18 @@ function stepPerform() {
     # 3) sequencer
 
     echo -e "${ORANGE} Now everything is ready, please, select which step would you like to perform. Sometimes we will have some steps already done and we would like to start the analysis from an specific step and no from the beginning. So, we now have the chance of select the step:
-#1) Import
-#2) Dada2
-#2*) Merge
-#3) Taxonomy
-#4) Diversity
-#5) SplitTables
-#6) Picrust2
-#7) AbundanceAnalysis
-#8) Picrust2results
-#
-#Please select the step:${LIGHTCYAN}(Write one of the above names):"
+    # Import
+    # Cutadapt
+    # Dada2
+    # Merge
+    # Taxonomy
+    # Diversity
+    # SplitTables
+    # Picrust2
+    # AbundanceAnalysis
+    # Picrust2results
+    #
+    #Please select the step:${LIGHTCYAN}(Write one of the above names):"
     read stepDecided
     # local "$kitPrimer"
     # local "$difSequenciations"
@@ -63,78 +64,93 @@ function stepPerform() {
 
     if test ${stepDecided} == "Import"; then
         if [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "No" ]; then
-            echo -e "${PURPLE} Importing samples..."
+            #echo -e "${PURPLE} Importing samples..."
             bash $DIR/src/IT_Import
         elif [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "Yes" ]; then               
-            echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
             bash $DIR/src/IT_Import_different_seqRuns
         elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            echo -e "${PURPLE} Importing samples..."
+            #echo -e "${PURPLE} Importing samples..."
             bash $DIR/src/IT_Import_Primers
         elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
             bash $DIR/src/IT_Import_Primers_different_seqRuns
         
         elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            echo -e "${PURPLE} Importing samples..."
+            #echo -e "${PURPLE} Importing samples..."
             bash $DIR/src/IL_Import_Primers
         elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
             bash $DIR/src/IL_Import_Primers_different_seqRuns
         fi
 
+    elif test ${stepDecided} == "Cutadapt"; then
+        if [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
+            #echo -e "${PURPLE} Importing samples..."
+            bash $DIR/src/IT_Cutadapt_Primers
+        elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            bash $DIR/src/IT_Cutadapt_Primers_different_seqRuns
+        
+        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
+            #echo -e "${PURPLE} Importing samples..."
+            bash $DIR/src/IL_Cutadapt_Primers
+        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            bash $DIR/src/IL_Cutadapt_Primers_different_seqRuns
+        fi
+        
     elif test ${stepDecided} == "Dada2"; then
         if [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "No" ]; then
-            echo -e "${PURPLE} Importing samples..."
+            #echo -e "${PURPLE} Importing samples..."
             bash $DIR/src/IT_16Skit_Dada2
         elif [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "Yes" ]; then               
-            echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
             bash $DIR/src/IT_16Skit_Dada2_different_seqRuns
         elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            echo -e "${PURPLE} Importing samples..."
+            #echo -e "${PURPLE} Importing samples..."
             bash $DIR/src/IT_Primers_Dada2
         elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
             bash $DIR/src/IT_Primers_Dada2_different_seqRuns
         
         elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            echo -e "${PURPLE} Importing samples..."
+            #echo -e "${PURPLE} Importing samples..."
             bash $DIR/src/IL_Primers_Dada2
         elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            echo -e "${PURPLE} Importing samples from different sequencing runs..."
+            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
             bash $DIR/src/IL_Primers_Dada2_different_seqRuns
         fi      
 
     elif test ${stepDecided} == "Merge"; then 
-        echo -e "${PURPLE} Merging tables from different sequencing runs amplified with 16SKit..."
-        bash $DIR/src/merge
+        #echo -e "${PURPLE} Merging tables from different sequencing runs amplified with 16SKit..."
+        bash $DIR/src/mergeEdit
         
     elif test ${stepDecided} == "Taxonomy"; then 
-        echo -e "${PURPLE} Starting taxonomical classification..."
+        #echo -e "${PURPLE} Starting taxonomical classification..."
         bash $DIR/src/TaxonomicClassification
 
     elif test ${stepDecided} == "Diversity"; then 
-        echo -e "${PURPLE} Starting diversity analysis..."
+        #echo -e "${PURPLE} Starting diversity analysis..."
         bash $DIR/src/Diversity
 
     elif test ${stepDecided} == "SplitTables"; then 
-        echo -e "${PURPLE} Starting splitting tables step..."
+        #echo -e "${PURPLE} Starting splitting tables step..."
         bash $DIR/src/SplitDada2Tables
 
     elif test ${stepDecided} == "Picrust2"; then 
-        echo -e "${PURPLE} Starting Picrust2 functional analysis..."
+        #echo -e "${PURPLE} Starting Picrust2 functional analysis..."
         bash $DIR/src/PICRUSTpipeline
 
      elif test ${stepDecided} == "AbundanceAnalysis"; then 
-        echo -e "${PURPLE} Starting Abundance table analysis using R..."
+        #echo -e "${PURPLE} Starting Abundance table analysis using R..."
         bash $DIR/src/TaxonomicAnalysis_LefSe_RelAbundTables_byR
 
      elif test ${stepDecided} == "Picrust2results"; then 
-        echo -e "${PURPLE} Starting Picrust2 results analysis..."
+        #echo -e "${PURPLE} Starting Picrust2 results analysis..."
         bash $DIR/src/PicrustAnalysis_statistics_byR
 
     fi
-
 }
 
 
