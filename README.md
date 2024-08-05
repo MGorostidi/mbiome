@@ -36,24 +36,28 @@ cd mbiome
 
 ### Installing: 
 
-Qiime2 Docs already has a installing step by step tutorial here: https://docs.qiime2.org/2022.8/install/native/#install-qiime-2-within-a-conda-environment
+Qiime2 Docs already has a installing step by step tutorial here: https://docs.qiime2.org/2024.5/install/native/#install-qiime-2-within-a-conda-environment 
 
 1. Make sure Miniconda is installed in your computer (follow instructions in https://docs.anaconda.com/free/miniconda/)
 2. Update conda:
 ```shell
 conda update conda
 ```
-3. Install wget:
+<!-- 3. Install wget:
 ```shell
 conda install wget
-```
-4. Create Qiime2 environment: 
+``` -->
+3. Create Qiime2 environment: 
+
 ```shell
+conda env create -n qiime2-amplicon-2024.5 --file https://data.qiime2.org/distro/amplicon/qiime2-amplicon-2024.5-py39-linux-conda.yml
+```
+<!-- ```shell
 wget https://data.qiime2.org/distro/amplicon/qiime2-amplicon-2024.2-py38-linux-conda.yml
 conda env create -n qiime2-amplicon-2024.2 --file qiime2-amplicon-2024.2-py38-linux-conda.yml
 rm qiime2-amplicon-2024.2-py38-linux-conda.yml
-```
-5. Create Picrust2 environment for Picrust2 analysis: 
+``` -->
+4. Create Picrust2 environment for Picrust2 analysis: 
 ```shell
 #From Picrust2 tutorial: https://github.com/picrust/picrust2/wiki/PICRUSt2-Tutorial-(v2.3.0-beta)
 conda create -n picrust2 -c bioconda -c conda-forge picrust2=2.3.0_b
@@ -91,5 +95,5 @@ bash import_databases.sh
 ## Running the workflow: 
 Everything is integrated in an unique script, so you just need to run it and answer the questions that it iteractively asks:
 ```shell
-bash Qiime2PIPELINE_MAIN.sh
+bash Qiime2PIPELINE_MAIN
 ```
