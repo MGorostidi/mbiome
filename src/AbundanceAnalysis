@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+
+
