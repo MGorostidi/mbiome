@@ -16,7 +16,7 @@ echo -e "$ORANGE If you have previously decided to perform CUTADAPT because you 
 qiime tools view ${CURRENT_DIR}/samples.qzv
 
 # Ask for truncating and trimming parameters:
-echo -e "${LIGHTCYAN} Enter truncating length for Forward sequences"
+echo -e "${LIGHTCYAN}\n Enter truncating length for Forward sequences"
 read trunc_forward
 echo -e "${LIGHTCYAN} Enter truncating length for Reverse sequences"
 read trunc_reverse
