@@ -1,0 +1,79 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+        read runNums
+
+array_runs=($(echo $runNums | tr "," "\n"))
+
+my_regions=$V_REGIONS
+array_regions=($(echo $my_regions | tr "," "\n"))
+
+for Vregion in "${array_regions[@]}"; do
+    echo -e "${PURPLE}Merging dada2 outputs from different runs for ${Vregion} region.. ${NC}"
+    #for Vregion in "${array_regions[@]}"; do
+    DADA2_PATH=$EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output
+    # Merge table.qza files:
+    input_files_table=()
+    trunc_lengths=()
+    for file in "$DADA2_PATH"/*-table-*.qza; do
+        input_files_table+=("--i-tables $file")
+        # Save used trunc_length
+        if [[ $file =~ ([0-9]+)\.qza$ ]]; then
+            trunc_length="${BASH_REMATCH[1]}"
+            trunc_lengths+=("$trunc_length")
+        fi
+    done
+
+    first_trunc_length="${trunc_lengths[0]}"
+
+    # Create the merging qiime2 command line:
+    merge_command="qiime feature-table merge ${input_files_table[@]} --o-merged-table $DADA2_PATH/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza --p-overlap-method sum"
+
+    # Run command line:
+    eval $merge_command
+
+    qiime metadata tabulate \
+        --m-input-file $DADA2_PATH/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza \
+        --o-visualization $DADA2_PATH/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qzv
+    
+
+    # Find all the rep-seqs.qza files in the dada2-output folder
+    input_files_repseq=()
+    for file in "$DADA2_PATH"/*-rep-seqs-*.qza; do
+        input_files_repseq+=("--i-data $file")
+    done
+
+    # Create the merging qiime2 command line:
+    merge_command_repseqs="qiime feature-table merge-seqs ${input_files_repseq[@]} --o-merged-data $DADA2_PATH/merged-${Vregion}-rep-seqs-pyro-trun${first_trunc_length}.qza"
+
+    # Run command line:
+    eval $merge_command_repseqs
+
+    qiime metadata tabulate \
+        --m-input-file $DADA2_PATH/merged-${Vregion}-rep-seqs-pyro-trun${first_trunc_length}.qza \
+        --o-visualization $DADA2_PATH/merged-${Vregion}-rep-seqs-pyro-trun${first_trunc_length}.qzv
+done
+
+echo -e "${ORANGE} For the taxonomic classification you can both, perform a classification by Vregion against a reference database OR, perform SIDLE, that will make a reconstruction of all the Vregions. ${LIGHTCYAN}Please, choose between 'byregion', 'sidle' or 'both':"
+    read taxClassification
+
+# Decide taxonomic classification
+if test ${taxClassification} == "byregion"; then
+    echo -e "${PURPLE}Continuing with by V region classification..."
+    bash $DIR/src/IT_MetagenomicsKit_byRegion_tax_classification
+
+elif test ${taxClassification} == "sidle"; then
+    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+    bash $DIR/src/IT_MetagenomicsKit_Sidle_reconstruction
+
+elif test ${taxClassification} == "both"; then
+    echo -e "${PURPLE}Continuing with by V region classification..."
+    bash $DIR/src/IT_MetagenomicsKit_byRegion_tax_classification
+    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+    bash $DIR/src/IT_MetagenomicsKit_Sidle_reconstruction
+fi
