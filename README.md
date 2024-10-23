@@ -62,6 +62,28 @@ rm qiime2-amplicon-2024.2-py38-linux-conda.yml
 #From Picrust2 tutorial: https://github.com/picrust/picrust2/wiki/PICRUSt2-Tutorial-(v2.3.0-beta)
 conda create -n picrust2 -c bioconda -c conda-forge picrust2=2.3.0_b
 ```
+5. Downloading MetagenomicsPP plugin by Thermofisher: 
+```shell
+# From https://apps.thermofisher.com/apps/spa/#/publiclib/plugins , after loggin in in the Thermofisher account.
+# 1) Log in (or Sign in) in Thermofisher.
+# 2) Go to https://apps.thermofisher.com/apps/spa/#/publiclib/plugins 
+# 3) Search for MetagenomicsPP and download it
+# 4) Unzip the downloaded .zip folder
+# 5) Move the MetagenomicsPP folder to the mbiome folder. 
+```
+
+6. Downloading and Installing Sidle for reconstruction: 
+```shell
+# Downloading Sidle and installing Sidle: 
+# Tutorial: https://q2-sidle.readthedocs.io/en/latest/database_preparation.html
+# Activate your qiime2 environment: 
+conda activate qiime2-amplicon-2024.5
+conda install dask
+conda install -c conda-forge -c bioconda -c qiime2 -c defaults xmltodict
+# pip install git+https://github.com/bokulich-lab/RESCRIPt.git # IF RESCRIPT IS NOT INSTALLED IN YOUR QIIME2 ENVIRONMENT (Last versions normally include it)
+pip install git+https://github.com/jwdebelius/q2-sidle
+qiime dev refresh-cache
+```
 
 ### Initial configuration: 
 1. Open initialize_parameters.sh and update the necessary variables: 
