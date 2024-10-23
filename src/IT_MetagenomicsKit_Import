@@ -1,0 +1,37 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+        read runNums
+
+array_runs=($(echo $runNums | tr "," "\n"))
+
+
+my_regions=$V_REGIONS
+array_regions=($(echo $my_regions | tr "," "\n"))
+
+for Vregion in "${array_regions[@]}"; do
+    for run in "${array_runs[@]}"; do
+        echo -e "${PURPLE}Importing samples from run $run and V region $Vregion to Qiime2...${NC}"
+        qiime tools import \
+        --type 'SampleData[SequencesWithQuality]' \
+        --input-path $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/manifest_${Vregion}.txt \
+        --input-format SingleEndFastqManifestPhred33V2 \
+        --output-path $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/samples-run${run}-${Vregion}.qza
+
+        echo -e "${PURPLE}Creating visualization for run $run and V region $Vregion...${NC}"
+        qiime demux summarize \
+        --i-data  $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/samples-run${run}-${Vregion}.qza \
+        --o-visualization $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/samples-run${run}-${Vregion}-demux.qzv
+
+    done
+done
+
+# Perform Cutprimers
+bash $DIR/src/IT_MetagenomicsKit_Dada2
+
+
