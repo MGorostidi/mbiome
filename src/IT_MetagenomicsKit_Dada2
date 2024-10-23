@@ -1,0 +1,84 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+        read runNums
+
+array_runs=($(echo $runNums | tr "," "\n"))
+
+my_regions=$V_REGIONS
+array_regions=($(echo $my_regions | tr "," "\n"))
+
+for Vregion in "${array_regions[@]}"; do
+    mkdir -p $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output
+    # Visualize the quality graphs for decide the DADA2 parameters. 
+    echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. When we work with more than one run, we need to decide the truncating length based on all the .qzv samples created. Take a look to all the graphs (one for each run) that have been opened up. (You will need to quit the viewer, pressing 'q', for the next file to open)${NC}"
+    for run in "${array_runs[@]}"; do
+        echo -e "${PURPLE}Opening run $run and V region $Vregion .qzv visualization...${NC}"
+        qiime tools view $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/samples-run${run}-${Vregion}-demux.qzv
+    done
+
+    # Ask for truncating and trimming parameters:
+    echo -e "${LIGHTCYAN} Enter truncating length for V region $Vregion"
+    read trunc_lenVal_byVregion
+
+    for run in "${array_runs[@]}"; do
+        # Dada2 step
+        echo -e "\n${PURPLE}Performing Dada2 for run $run for V region $Vregion...${NC}"
+        qiime dada2 denoise-pyro \
+            --i-demultiplexed-seqs $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/samples-run${run}-${Vregion}.qza \
+            --p-trunc-len ${trunc_lenVal_byVregion} \
+            --p-n-threads 4 \
+            --o-representative-sequences $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-rep-seqs-pyro-trun${trunc_lenVal_byVregion}.qza \
+            --o-table $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-table-pyro-trun${trunc_lenVal_byVregion}.qza \
+            --o-denoising-stats $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-stats-dada2-pyro-trun${trunc_lenVal_byVregion}.qza \
+            --verbose
+        
+            # Since the MetagenomicPP plugin has been used for separting reads by region and removing primers, no trimming will be used. 
+
+            #Visualizing Resulting data...
+            #Converting DADA2 artifact .qza to .qzv
+            # qiime feature-table summarize \
+            # --i-table $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/Dada2_output/samples-run${run}-${Vregion}-table-pyro.qza \
+            # --o-visualization $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/Dada2_output/samples-run${run}-${Vregion}-table-pyro.qzv \
+            # --m-sample-metadata-file ${CURRENT_DIR}/samples-metadata-run${run}.tsv
+
+            qiime feature-table tabulate-seqs \
+            --i-data $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-rep-seqs-pyro-trun${trunc_lenVal_byVregion}.qza \
+            --o-visualization $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-rep-seqs-pyro-trun${trunc_lenVal_byVregion}.qzv
+
+            qiime metadata tabulate \
+            --m-input-file $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-stats-dada2-pyro-trun${trunc_lenVal_byVregion}.qza \
+            --o-visualization $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-stats-dada2-pyro-trun${trunc_lenVal_byVregion}.qzv
+    done
+
+    echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each run run:${NC}"
+    
+    # Visualize statistic.qzv to know if the Dada2 parameters were the correct ones
+    for run in "${array_runs[@]}"
+    do
+        qiime tools view $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/samples-run${run}-${Vregion}-stats-dada2-pyro-trun${trunc_lenVal_byVregion}.qzv
+    done
+
+    echo -e "${ORANGE}Once you have vizualize all the statistic tables... ${LIGHTCYAN} Do you want to re-run dada2 for V region ${Vregion}? (Write Yes or No)"
+    read repeatDada2
+    
+    # Decide if Dada2 needs to be re-run
+    if test ${repeatDada2} == "Yes"; then
+        echo -e "${PURPLE}Running DADA2 again..."
+        # For this version all the previous dada2 outputs need to be removed, later on this will be optimized!!
+        rm -r $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output
+        bash $DIR/src/IT_MetagenomicsKit_Dada2
+    elif test ${repeatDada2} == "No"; then
+        echo -e "${PURPLE}Continue to Taxonomic classification..."
+        echo -e "${PURPLE}Merging dada2 outputs from different runs..."
+        bash $DIR/src/IT_MetagenomicsKit_Dada2_merge
+
+    fi
+done
+
+
