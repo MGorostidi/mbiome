@@ -1,0 +1,219 @@
+#!/bin/bash
+
+
+source ../initialize_parameters.sh
+
+CURRENT_DIR=$PWD
+
+SCRIPTS_PATH=$DIR/src
+EXPERIMENT_PATH=$DIR/EXPERIMENTS/Prueba16SbyRegion
+
+
+# echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+#         read runNums
+
+
+echo -e "${PURPLE}Activating Qiime2..."
+source $DIR_CONDA
+conda activate $QIIME2_ENV_NAME
+
+# # Downloading Sidle and installing Sidle: 
+# # Tutorial: https://q2-sidle.readthedocs.io/en/latest/database_preparation.html
+# conda install dask
+# conda install -c conda-forge -c bioconda -c qiime2 -c defaults xmltodict
+# # pip install git+https://github.com/bokulich-lab/RESCRIPt.git
+# pip install git+https://github.com/jwdebelius/q2-sidle
+# qiime dev refresh-cache
+
+
+
+# #############################
+# cd $DIR_DATABASES
+# wget https://github.com/jwdebelius/q2-sidle/raw/main/docs/tutorial_data/database.zip
+# unzip database.zip -d SidleDB
+
+# echo -e "${PURPLE}Sidle running..."
+# qiime feature-table tabulate-seqs \
+#  --i-data $DIR_DATABASES/SidleDB/database/sidle-db-full-sequences.qza \
+#  --o-visualization $DIR_DATABASES/SidleDB/database/sidle-db-full-sequences.qzv
+
+# # Filtering: 
+# # From the Tutoria above: The authors of SMURF [1] recommend filtering the database to remove sequences with more than 3 degenerate nucleotides.
+# qiime rescript cull-seqs \
+#     --i-sequences $DIR_DATABASES/SidleDB/database/sidle-db-full-sequences.qza \
+#     --p-num-degenerates 3 \
+#     --o-clean-sequences $DIR_DATABASES/SidleDB/database/sidle-db-full-degen-filtered-sequences.qza
+# #############################
+
+
+echo -e "${PURPLE}Sidle running..."
+# qiime feature-table tabulate-seqs \
+#  --i-data $DIR_DATABASES/Silva_DB/silva-138-99-seqs.qza \
+#  --o-visualization $DIR_DATABASES/Silva_DB/silva-138-99-seqs.qzv
+
+# # Filtering: 
+# # From the Tutoria above: The authors of SMURF [1] recommend filtering the database to remove sequences with more than 3 degenerate nucleotides.
+# qiime rescript cull-seqs \
+#     --i-sequences $DIR_DATABASES/Silva_DB/silva-138-99-seqs.qza \
+#     --p-num-degenerates 3 \
+#     --o-clean-sequences $DIR_DATABASES/Silva_DB/silva-138-99-seqs-sidle-filt.qza
+# #############################
+
+
+# RUNNING SIDLE: 
+
+# Saving primers by regions: 
+# Declare associative array:
+declare -A primersVregion
+
+# Add primer sequences to each V region:
+primersVregion[V2_fwd]=NGCGNACGGGTGAGTAA
+primersVregion[V2_rev]=GCTGCCTCCCGTAGGAG
+
+
+primersVregion[V3_fwd]=CTGAGACACGGTCCANACT
+primersVregion[V3_rev]=GTATTACCGCGGCTGCTG
+
+primersVregion[V4_fwd]=CCAGCAGCCGCGGTAATA
+primersVregion[V4_rev]=GGACTACCAGGGTATCTAATCCTGT
+
+primersVregion[V67_fwd]=ACAAGCGGNGGAGCATGT
+primersVregion[V67_rev]=GACGTCATCCCCACCTTCC
+
+primersVregion[V8_fwd]=GNTGTCGTCAGCTCGTGT
+primersVregion[V8_rev]=CGATTACTAGCGANTCCGACTTCA
+
+primersVregion[V9_fwd]=GTTACGACTTCACCCCAGTCA
+primersVregion[V9_rev]=GCGTCGTAGTCCGGATTGG
+
+
+# Convert Regions to array for for loop:
+#my_regions=V2,V3,V4,V67,V8,V9
+my_regions=V2,V3,V4
+array_regions=($(echo $my_regions | tr "," "\n"))
+
+mkdir -p $EXPERIMENT_PATH/sidle/databases
+mkdir -p $EXPERIMENT_PATH/sidle/alignments
+
+
+region_alignment_files=()
+p_regions=()
+region_kmer_files=()
+
+reconstruct_db_command="qiime sidle reconstruct-database"
+reconstruct_counts_command="qiime sidle reconstruct-counts"
+
+# for Vregion in "${array_regions[@]}"; do
+
+#     # echo -e "${PURPLE}Extracting reads for V region $Vregion to Qiime2..."
+
+#     # qiime feature-classifier extract-reads \
+#     #     --i-sequences $DIR_DATABASES/Silva_DB/silva-138-99-seqs-sidle-filt.qza \
+#     #     --p-f-primer ${primersVregion[${Vregion}_fwd]} \
+#     #     --p-r-primer ${primersVregion[${Vregion}_rev]} \
+#     #     --o-reads $EXPERIMENT_PATH/sidle/databases/silva-138-99-seqs-sidle-filt-${Vregion}.qza
+
+
+#     # trim length needs to be the same used for dada2: 
+#     INPUT_PATH=$EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output
+#     trunc_lengths=()
+#     for file in "$INPUT_PATH"/*-table-*.qza; do
+#         # Save used trunc_length
+#         if [[ $file =~ ([0-9]+)\.qza$ ]]; then
+#             trunc_length="${BASH_REMATCH[1]}"
+#             trunc_lengths+=("$trunc_length")
+#         fi
+#     done
+#     first_trunc_length="${trunc_lengths[0]}"
+
+#     # qiime sidle prepare-extracted-region \
+#     #     --i-sequences $EXPERIMENT_PATH/sidle/databases/silva-138-99-seqs-sidle-filt-${Vregion}.qza \
+#     #     --p-region ${Vregion} \
+#     #     --p-fwd-primer ${primersVregion[${Vregion}_fwd]} \
+#     #     --p-rev-primer ${primersVregion[${Vregion}_rev]} \
+#     #     --p-trim-length ${first_trunc_length} \
+#     #     --p-n-workers 4 \
+#     #     --o-collapsed-kmers $EXPERIMENT_PATH/sidle/databases/silva-138-99-seqs-sidle-filt-${Vregion}-${first_trunc_length}nt-kmers.qza \
+#     #     --o-kmer-map $EXPERIMENT_PATH/sidle/databases/silva-138-99-seqs-sidle-filt-${Vregion}-${first_trunc_length}nt-map.qza
+    
+    
+#     # echo -e "${PURPLE}Starting $Vregion region alignment..."
+#     # qiime sidle align-regional-kmers \
+#     #     --i-kmers $EXPERIMENT_PATH/sidle/databases/silva-138-99-seqs-sidle-filt-${Vregion}-${first_trunc_length}nt-kmers.qza \
+#     #     --i-rep-seq $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/merged-${Vregion}-rep-seqs-pyro-trun${first_trunc_length}.qza \
+#     #     --p-region ${Vregion} \
+#     #     --p-max-mismatch 2 \
+#     #     --p-n-workers 4 \
+#     #     --o-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${Vregion}-alignment.qza
+
+#     #     #--p-chunk-size {params.chunk_size} \ ?¿?¿
+
+#     # qiime metadata tabulate \
+#     #     --m-input-file $EXPERIMENT_PATH/sidle/alignments/${Vregion}-alignment.qza \
+#     #     --o-visualization $EXPERIMENT_PATH/sidle/alignments/${Vregion}-alignment.qzv \
+#     #     --verbose \
+
+#     # echo -e "${PURPLE}$Vregion region alignment finished!"
+
+#     p_reg="--p-region ${Vregion}"
+#     reg_alignment="--i-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${Vregion}-alignment.qza"
+#     kmer_map_file="--i-kmer-map $EXPERIMENT_PATH/sidle/databases/silva-138-99-seqs-sidle-filt-${Vregion}-${first_trunc_length}nt-map.qza"
+
+#     reconstruct_db_command+=" ${p_reg} ${reg_alignment} ${kmer_map_file}"
+
+#     reg_table="--i-regional-table $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza"
+
+#     reconstruct_counts_command+=" ${p_reg} ${reg_alignment} ${reg_table}"
+
+# done
+
+# mkdir -p $EXPERIMENT_PATH/sidle/reconstruction
+
+# # Finish reconstruct_db_command
+# reconstruct_db_command+=" --p-n-workers 4 --o-database-map $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-map.qza --o-database-summary $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-summary.qza"
+
+# # Run reconstruct_db_command
+# echo $reconstruct_db_command
+# eval $reconstruct_db_command
+
+# qiime metadata tabulate \
+#  --m-input-file $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-summary.qza \
+#  --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-summary.qzv
+
+
+# # Finish reconstruct_counts_command
+# reconstruct_counts_command+=" --i-database-map $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-map.qza --i-database-summary $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-summary.qza --p-n-workers 4 --o-reconstructed-table $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-table.qza"
+
+# # Run reconstruct_db_command
+# echo $reconstruct_counts_command
+# eval $reconstruct_counts_command
+
+# qiime feature-table summarize \
+#  --i-table $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-table.qza \
+#  --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-tablee.qzv
+
+# qiime tools export \
+#  --input-path $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-table.qza \
+#  --output-path $EXPERIMENT_PATH/sidle/reconstruction
+
+
+biom convert \
+    -i $EXPERIMENT_PATH/sidle/reconstruction/feature-table.biom \
+    -o $EXPERIMENT_PATH/sidle/silva-138-99-seqs-sidle-filt-feature-table.tsv \
+    --to-tsv
+
+
+qiime sidle reconstruct-taxonomy \
+ --i-reconstruction-map $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-map.qza \
+ --i-taxonomy $DIR_DATABASES/Silva_DB/silva-138-99-tax.qza \
+ --p-database 'silva' \
+ --p-define-missing 'inherit' \
+ --o-reconstructed-taxonomy $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-taxonomy.qza
+
+qiime metadata tabulate \
+ --m-input-file $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-taxonomy.qza \
+ --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-taxonomy.qzv
+
+ qiime tools export \
+ --input-path $EXPERIMENT_PATH/sidle/reconstruction/silva-138-99-seqs-sidle-filt-league-taxonomy.qza \
+ --output-path $EXPERIMENT_PATH/sidle

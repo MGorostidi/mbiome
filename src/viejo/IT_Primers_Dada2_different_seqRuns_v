@@ -1,0 +1,108 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+
+#Ask for run ID numbers
+echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+        read runNums
+
+#Convert seq numbers to vector
+my_string=$runNums
+my_array=($(echo $my_string | tr "," "\n"))
+
+# Visualize the quality graphs for decide the DADA2 parameters. 
+echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. 
+When we work with more than one run, we need to decide the truncating length based on all the .qzv samples created. 
+Take a look to all the graphs (one for each run) that have been opened up. (You will need to quit the viewer, pressing 'q', for the next file to open)"
+
+echo -e "$ORANGE If you have previously decided to perform CUTADAPT because you knew the exact primer sequences,
+ now you should choose a 0 (zero) in the trimming parameters. If not, you should select a trimming length that 
+ removes the lower quality base pairs from the left of the quality graph."
+
+# Visualize Quality graphs
+for runNums in "${my_array[@]}"
+do
+    qiime tools view ${CURRENT_DIR}/samples-run${runNums}-demux.qzv
+done
+
+# Ask for truncating and trimming parameters:
+echo -e "${LIGHTCYAN} Enter truncating length"
+read trunc_lenVal
+echo -e "${LIGHTCYAN} Enter trimming length"
+read trim_lenVal
+
+mkdir $CURRENT_DIR/Dada2_output
+
+
+for runNums in "${my_array[@]}"; do
+  # Dada2 step
+  echo -e "$PURPLE Running Dada2 step for run $runNums ..."
+  qiime dada2 denoise-pyro \
+    --i-demultiplexed-seqs ${CURRENT_DIR}/samples-run${runNums}.qza \
+    --p-trunc-len ${trunc_lenVal} \
+    --p-trim-left ${trim_lenVal} \
+    --p-n-threads 4 \
+    --o-representative-sequences ${CURRENT_DIR}/Dada2_output/run${runNums}-rep-seqs-pyro.qza \
+    --o-table ${CURRENT_DIR}/Dada2_output/run${runNums}-table-pyro.qza \
+    --o-denoising-stats ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-pyro.qza \
+    --verbose
+
+
+  #Visualizing Resulting data...
+  #Converting DADA2 artifact .qza to .qzv
+  qiime feature-table summarize \
+    --i-table ${CURRENT_DIR}/Dada2_output/run${runNums}-table-pyro.qza \
+    --o-visualization ${CURRENT_DIR}/Dada2_output/run${runNums}-table-pyro.qzv \
+    --m-sample-metadata-file ${CURRENT_DIR}/samples-metadata-run${runNums}.tsv
+  qiime feature-table tabulate-seqs \
+    --i-data ${CURRENT_DIR}/Dada2_output/run${runNums}-rep-seqs-pyro.qza \
+    --o-visualization ${CURRENT_DIR}/Dada2_output/run${runNums}-rep-seqs-pyro.qzv
+  qiime metadata tabulate \
+    --m-input-file ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-pyro.qza \
+    --o-visualization ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-pyro.qzv
+
+done
+
+# Create report with the parameters used:
+echo -e "${PURPLE} Creating summary report..."
+echo "This is a summary report of the parameters used in DADA2 step: 
+                        Truncating Length: ${trunc_lenVal}
+                        Trimming Length: ${trim_lenVal}" >| ${CURRENT_DIR}/Dada2_output/DADA2_parameters_report.txt
+
+echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each seq run:${NC}"
+# Visualize statistic.qzv to know if the Dada2 parameters were the correct ones
+for runNums in "${my_array[@]}"; do
+    qiime tools view ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-pyro.qzv
+done
+
+
+echo "\n"
+echo -e "${ORANGE}Once you have vizualize all the statistic tables... ${LIGHTCYAN} Do you want to re-run dada2? (Write Yes or No)"
+read repeatDada2
+
+# Decide if Dada2 needs to be re-run
+if test ${repeatDada2} == "Yes"; then 
+    echo -e "${PURPLE}Running DADA2 again..."
+    bash $DIR/src/IT_Primers_Dada2_different_seqRuns
+
+elif test ${repeatDada2} == "No"; then
+    echo -e "${ORANGE}Now we have run DADA2, we will have 3 files for each run. In order to continue with the taxonomic analysis, we need to merge table and rep-seqs files."
+    echo "Please, edit manually the 'mergeEdit' file that you will find in ../src folder.${LIGHTCYAN} Once you have already modified it, please write Yes:"
+    read mergeDone
+
+    if test ${mergeDone} == "Yes"; then 
+        bash $DIR/src/mergeEdit
+    fi
+
+  echo -e "${ORANGE} Make sure the merged rep-seqs.qza and the table.qza files have been created. Now we will perform the Taxonomic analysis:"
+  # Perform Taxonomic Classification:
+  echo -e "${PURPLE}Going forward to Taxonomic Classification..."
+  bash $DIR/src/TaxonomicClassification
+fi
+
+
+

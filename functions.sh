@@ -16,7 +16,7 @@ function createReport_experiment() {
     # local "$sequencer"
    filename="${1}_experiment_report.txt"
 
-    echo -e "${PURPLE} Creating summary report..."
+    echo -e "${PURPLE}Creating summary report..."
     echo "This is a summary report of the steps followed in the $1 experiment: 
                             DNA Amplification: $2
                             Sequencer: $4
@@ -40,116 +40,80 @@ function createReport_experiment() {
 
 function stepPerform() {
     # arguments:
-    # 1) kitPrimer
-    # 2) difSequenciations
-    # 3) sequencer
+    # 1) sequencer
+    # 2) kitPrimer
+    # 3) difSequenciations
 
-    echo -e "${ORANGE} Now everything is ready, please, select which step would you like to perform. Sometimes we will have some steps already done and we would like to start the analysis from an specific step and no from the beginning. So, we now have the chance of select the step:
-    # Import
-    # Cutadapt
-    # Dada2
-    # Merge
-    # Taxonomy
-    # Diversity
-    # SplitTables
-    # Picrust2
-    # AbundanceAnalysis
-    # Picrust2results
-    #
-    #Please select the step:${LIGHTCYAN}(Write one of the above names):"
-    read stepDecided
-    # local "$kitPrimer"
-    # local "$difSequenciations"
-    # local "$sequencer"
-
-    if test ${stepDecided} == "Import"; then
-        if [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "No" ]; then
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IT_Import
-        elif [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "Yes" ]; then               
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IT_Import_different_seqRuns
-        elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IT_Import_Primers
-        elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IT_Import_Primers_different_seqRuns
+    if [ $1 == "IT" ] && [ $2 == "Kit" ]; then
         
-        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IL_Import_Primers
-        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IL_Import_Primers_different_seqRuns
-        fi
-
-    elif test ${stepDecided} == "Cutadapt"; then
-        if [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IT_Cutadapt_Primers
-        elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IT_Cutadapt_Primers_different_seqRuns
+        SELECTED_WORKFLOW="IT_MetagenomicsKit"
         
-        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IL_Cutadapt_Primers
-        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IL_Cutadapt_Primers_different_seqRuns
-        fi
+        echo -e "${LIGHTCYAN}The chosen workflow is Ion Torrent Metagenomics Kit!"
+        echo -e "${ORANGE}Now everything is ready, please, select which step would you like to perform. Sometimes we will have some steps already done and we would like to start the analysis from an specific step and no from the beginning. So, we now have the chance of select the step:
+         # 0) MetagenomicsPP Plugin for splitting Vregions ${LIGHTCYAN}(write: PP)${ORANGE}
+         # 1) Import splitted demultiplexed files to Qiime2 ${LIGHTCYAN}(write: Import)${ORANGE}
+         # 2) Dada2 for identifying ASVs ${LIGHTCYAN}(write: Dada2)${ORANGE}
+         # 2.1) If samples come from different sequencing runs, previous steps are performed by run, so a merging of Dada2 output is needed ${LIGHTCYAN}(write: Merge)${ORANGE}
+         # 3) Taxonomic Classification; both VSEARCH and SIDLE reconstruction options are included ${LIGHTCYAN}(write: Taxonomy)${ORANGE}
+         # ABUNDANCE TABLES?
+         # PICRUST?
+         #Please select the step:${LIGHTCYAN}(Write one of the above names):"
+        read stepDecided
+        SELECTED_STEP=${stepDecided}
+
+    elif [ $1 == "IT" ] && [ $2 == "Primers" ]; then   
+        SELECTED_WORKFLOW="IT_Primers"
         
-    elif test ${stepDecided} == "Dada2"; then
-        if [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "No" ]; then
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IT_16Skit_Dada2
-        elif [ $3 == "IT" ] && [ $1 == "Kit" ] && [ $2 == "Yes" ]; then               
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IT_16Skit_Dada2_different_seqRuns
-        elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IT_Primers_Dada2
-        elif [ $3 == "IT" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IT_Primers_Dada2_different_seqRuns
+        echo -e "${LIGHTCYAN}The chosen workflow is Ion Torrent Primers!"
+        echo -e "${ORANGE}Now everything is ready, please, select which step would you like to perform. Sometimes we will have some steps already done and we would like to start the analysis from an specific step and no from the beginning. So, we now have the chance of select the step:
+         # 1) Import demultiplexed files to Qiime2 ${LIGHTCYAN}(write: Import)${ORANGE}
+         # 2) Cutadapt for known primer removal ${LIGHTCYAN}(write: Cutadapt)${ORANGE}
+         # 3) Dada2 for identifying ASVs ${LIGHTCYAN}(write: Dada2)${ORANGE}
+         # 3.1) If samples come from different sequencing runs, previous steps are performed by run, so a merging of Dada2 output is needed ${LIGHTCYAN}(write: Merge)${ORANGE}
+         # 4) Taxonomic Classification VSEARCH ${LIGHTCYAN}(write: Taxonomy)${ORANGE}
+         # ABUNDANCE TABLES?
+         # PICRUST?
+         #Please select the step:${LIGHTCYAN}(Write one of the above names):"
+        read stepDecided
+        SELECTED_STEP=${stepDecided}
+    
+    elif [ $1 == "IL" ] && [ $2 == "Primers" ]; then   
+        SELECTED_WORKFLOW="IL_Primers"
         
-        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "No" ]; then 
-            #echo -e "${PURPLE} Importing samples..."
-            bash $DIR/src/IL_Primers_Dada2
-        elif [ $3 == "IL" ] && [ $1 == "Primers" ] && [ $2 == "Yes" ]; then 
-            #echo -e "${PURPLE} Importing samples from different sequencing runs..."
-            bash $DIR/src/IL_Primers_Dada2_different_seqRuns
-        fi      
+        echo -e "${LIGHTCYAN}The chosen workflow is Illumina Primers!"
+        echo -e "${ORANGE}Now everything is ready, please, select which step would you like to perform. Sometimes we will have some steps already done and we would like to start the analysis from an specific step and no from the beginning. So, we now have the chance of select the step:
+         # 1) Import demultiplexed files to Qiime2 ${LIGHTCYAN}(write: Import)${ORANGE}
+         # 2) Cutadapt for known primer removal ${LIGHTCYAN}(write: Cutadapt)${ORANGE}
+         # 3) Dada2 for identifying ASVs ${LIGHTCYAN}(write: Dada2)${ORANGE}
+         # 3.1) If samples come from different sequencing runs, previous steps are performed by run, so a merging of Dada2 output is needed ${LIGHTCYAN}(write: Merge)${ORANGE}
+         # 4) Taxonomic Classification VSEARCH ${LIGHTCYAN}(write: Taxonomy)${ORANGE}
+         # ABUNDANCE TABLES?
+         # PICRUST?
+         #Please select the step:${LIGHTCYAN}(Write one of the above names):"
+        read stepDecided
+        SELECTED_STEP=${stepDecided}
+    fi
 
-    elif test ${stepDecided} == "Merge"; then 
-        #echo -e "${PURPLE} Merging tables from different sequencing runs amplified with 16SKit..."
-        bash $DIR/src/mergeEdit
-        
-    elif test ${stepDecided} == "Taxonomy"; then 
-        #echo -e "${PURPLE} Starting taxonomical classification..."
-        bash $DIR/src/TaxonomicClassification
 
-    elif test ${stepDecided} == "Diversity"; then 
-        #echo -e "${PURPLE} Starting diversity analysis..."
-        bash $DIR/src/Diversity
-
-    elif test ${stepDecided} == "SplitTables"; then 
-        #echo -e "${PURPLE} Starting splitting tables step..."
-        bash $DIR/src/SplitDada2Tables
-
-    elif test ${stepDecided} == "Picrust2"; then 
-        #echo -e "${PURPLE} Starting Picrust2 functional analysis..."
-        bash $DIR/src/PICRUSTpipeline
-
-     elif test ${stepDecided} == "AbundanceAnalysis"; then 
-        #echo -e "${PURPLE} Starting Abundance table analysis using R..."
-        bash $DIR/src/TaxonomicAnalysis_LefSe_RelAbundTables_byR
-
-     elif test ${stepDecided} == "Picrust2results"; then 
-        #echo -e "${PURPLE} Starting Picrust2 results analysis..."
-        bash $DIR/src/PicrustAnalysis_statistics_byR
-
+    if test ${SELECTED_STEP} == "PP"; then 
+        bash $DIR/src/${SELECTED_WORKFLOW}_PP_splitVregions
+    elif test ${SELECTED_STEP} == "Import"; then 
+        bash $DIR/src/${SELECTED_WORKFLOW}_Import
+    elif test ${SELECTED_STEP} == "Cutadapt"; then 
+        bash $DIR/src/${SELECTED_WORKFLOW}_Cutadapt
+    elif test ${SELECTED_STEP} == "Dada2"; then 
+        bash $DIR/src/${SELECTED_WORKFLOW}_Dada2
+    elif test ${SELECTED_STEP} == "Merge"; then 
+        echo "Running ${SELECTED_WORKFLOW}_Dada2_merge"
+        bash $DIR/src/${SELECTED_WORKFLOW}_Dada2_merge
+    # elif test ${SELECTED_STEP} == "Taxonomy"; then 
+    #     bash $DIR/src/${SELECTED_WORKFLOW}_tax_classification
+    elif [ $SELECTED_STEP == "Taxonomy" ] && [ $SELECTED_WORKFLOW == "IT_MetagenomicsKit" ]; then   
+        echo "Running Taxonomic Classification for Metagenomics Kit"
+        bash $DIR/src/${SELECTED_WORKFLOW}_tax_classification
+    elif [ $SELECTED_STEP == "Taxonomy" ] && [ $SELECTED_WORKFLOW != "IT_MetagenomicsKit" ]; then   
+        echo "Running Taxonomic Classification"
+        bash $DIR/src/Tax_Classification_Primers
     fi
 }
 

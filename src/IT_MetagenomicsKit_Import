@@ -2,21 +2,19 @@
 
 source ../../initialize_parameters.sh
 
-#We store current path:
-CURRENT_DIR=$PWD
+EXPERIMENT_PATH=$PWD
 
 echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
         read runNums
 
 array_runs=($(echo $runNums | tr "," "\n"))
 
-
 my_regions=$V_REGIONS
 array_regions=($(echo $my_regions | tr "," "\n"))
 
 for Vregion in "${array_regions[@]}"; do
     for run in "${array_runs[@]}"; do
-        echo -e "${PURPLE}Importing samples from run $run and V region $Vregion to Qiime2...${NC}"
+        echo -e "${PURPLE}Importing Ion Torrent Metagenomics Kit samples from run $run and V region $Vregion to Qiime2...${NC}"
         qiime tools import \
         --type 'SampleData[SequencesWithQuality]' \
         --input-path $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/manifest_${Vregion}.txt \

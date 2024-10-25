@@ -1,0 +1,58 @@
+#!/bin/bash
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We initialize the experiment path:
+experimentsDir="/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Experiments"
+
+#We ask for the experiment folder:
+echo -e "${ORANGE} Please enter your ${lightCyan} experiment folder name: "
+read expPath
+DIR=${experimentsDir}/${expPath}
+
+echo -e "${ORANGE} And now, ${lightCyan} the exact name of the folder that contains picrust2 results (ex: Picrust2_total):"
+read picrustFolder
+
+echo -e "${ORANGE} Among all the 3 results of Picrust2, which one would you like to work with? ${lightCyan} Please, write the exact folder where the .tsv file is contain (ex: pathways_out, KO_metagenome_out or EC_metagenome_out). REMEMBER TO PREVIOUSLY EXTRACT THE .tsv.gz FILE!:"
+read picrustExpType
+
+echo -e "${ORANGE} And now the .tsv file name ${lightCyan} (Ex: path_abun_unstrat.tsv):"
+read picrustExpTypefile
+
+echo -e "${ORANGE} Please specify ${lightCyan} the metadata column you want to apply statistic analysis: "
+read metadataCol
+
+echo -e "${ORANGE} Sometimes we don't want to make the analysis for all the groups that our metadata colum comprenhends. If this is your case, ${lightCyan} please write the sub-groups of your metadata column you want to analyze (ex: Tecfidera,Aubagio) ${ORANGE} But, if it is not, and you want to analyze all the groups, ${lightCyan} just write No:"
+
+read metadataColGroups
+
+echo -e "${ORANGE} Choose the p-value you want as significative (*) ${lightCyan} (ex: 0.05):"
+
+read signPvalue
+
+
+
+echo -e "${ORANGE} Finally, you should have into account that this statistical analysis performs a Covariance analysis first. This is done for sex and age variables, so, please, confirm that in your metadata cols you call them like that"
+
+echo -e "${NC}"
+RscriptPath="/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/4_ScriptsR"
+Rscript="${RscriptPath}/Picrust_resultsAnalysis.R"
+
+echo ${picrustFolder}
+echo ${picrustExpType}
+echo ${picrustExpTypefile}
+echo "${picrustFolder}/${picrustExpType}/${picrustExpTypefile}"
+
+#R --vanilla -f r-clargs-3.R --args runI=13 parmsC="params.csv" xN=33.45
+R --vanilla -f ${Rscript} --args piCrustfolder=${picrustFolder} experimentCtype=${picrustExpType} experimentC="${picrustExpType}/${picrustExpTypefile}" metadataCol=${metadataCol} metaColgroup=${metadataColGroups} pathC=${DIR} pvalueC=${signPvalue}
+#R --vanilla -f ${Rscript} --args piCrustfolder=${picrustFolder} experimentC="${picrustExpType}" experimentCfile=${picrustExpTypefile} metadataCol=${metadataCol} metaColgroup=${metadataColGroups} pathC=${DIR}
+
+
+
+

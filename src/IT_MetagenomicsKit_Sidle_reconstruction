@@ -1,9 +1,9 @@
 #!/bin/bash
 
-source ../initialize_parameters.sh
+source ../../initialize_parameters.sh
 
 #We store current path:
-CURRENT_DIR=$PWD
+EXPERIMENT_PATH=$PWD
 
 echo -e "${ORANGE}Please, ensure that Sidle has already been installed (steps are described in Readme)"
 
@@ -23,7 +23,7 @@ if test ${refDB} == "SILVA"; then
             --p-num-degenerates 3 \
             --o-clean-sequences $DIR_DATABASES/Silva_DB/silva-138-99-seqs-sidle-filt.qza
     else
-        echo "SILVA DB already filtered!"
+        echo -e "${PURPLE}SILVA DB already filtered!"
     fi
 
     DB_NAME="silva-138-99-seqs"
@@ -32,14 +32,14 @@ if test ${refDB} == "SILVA"; then
     DB_FULL=silva-138-99-tax.qza
 
 elif test ${refDB} == "GG"; then
-        if [ ! -f "$DIR_DATABASES/GreenGenes_DB/99_otus_refs-sidle-filt.qza" ]; then
+    if [ ! -f "$DIR_DATABASES/GreenGenes_DB/99_otus_refs-sidle-filt.qza" ]; then
         echo -e "${PURPLE}GG DB has not been filtered yet, filtering DB to remove sequences with more than 3 degenerate nucleotides. ..."
         qiime rescript cull-seqs \
             --i-sequences $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/99_otus_refs.qza\
             --p-num-degenerates 3 \
             --o-clean-sequences $DIR_DATABASES/GreenGenes_DB/99_otus_refs-sidle-filt.qza
     else
-        echo "GG DB already filtered!"
+        echo -e "${PURPLE}GG DB already filtered!"
     fi
 
     DB_NAME="99_otus_refs"
@@ -56,7 +56,6 @@ declare -A primersVregion
 # Add primer sequences to each V region:
 primersVregion[V2_fwd]=NGCGNACGGGTGAGTAA
 primersVregion[V2_rev]=GCTGCCTCCCGTAGGAG
-
 
 primersVregion[V3_fwd]=CTGAGACACGGTCCANACT
 primersVregion[V3_rev]=GTATTACCGCGGCTGCTG

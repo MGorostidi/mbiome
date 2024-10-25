@@ -1,0 +1,182 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+EXPERIMENT_PATH=$PWD
+
+echo -e "${ORANGE}Please, ensure that Sidle has already been installed (steps are described in Readme)"
+
+echo -e "${ORANGE}Sidle requires time and resources, therefore, it will only be performed for the reference database of your choice.${LIGHTCYAN}Please, write SILVA or GG (if you are not sure, we recommend SILVA):"
+read refDB
+
+# Following the tutorial in: # Tutorial: https://q2-sidle.readthedocs.io/en/latest/database_preparation.html
+# From the Tutoria above: The authors of SMURF [1] recommend filtering the database to remove sequences with more than 3 degenerate nucleotides.
+# Chek if the database is aready filtered:
+
+if test ${refDB} == "SILVA"; then
+
+    if [ ! -f "$DIR_DATABASES/Silva_DB/silva-138-99-seqs-sidle-filt.qza" ]; then
+        echo -e "${PURPLE}SILVA DB has not been filtered yet, filtering DB to remove sequences with more than 3 degenerate nucleotides. ..."
+        qiime rescript cull-seqs \
+            --i-sequences $DIR_DATABASES/Silva_DB/silva-138-99-seqs.qza \
+            --p-num-degenerates 3 \
+            --o-clean-sequences $DIR_DATABASES/Silva_DB/silva-138-99-seqs-sidle-filt.qza
+    else
+        echo -e "${PURPLE}SILVA DB already filtered!"
+    fi
+
+    DB_NAME="silva-138-99-seqs"
+    DB_PATH="Silva_DB"
+    DB='silva' 
+    DB_FULL=silva-138-99-tax.qza
+
+elif test ${refDB} == "GG"; then
+    if [ ! -f "$DIR_DATABASES/GreenGenes_DB/99_otus_refs-sidle-filt.qza" ]; then
+        echo -e "${PURPLE}GG DB has not been filtered yet, filtering DB to remove sequences with more than 3 degenerate nucleotides. ..."
+        qiime rescript cull-seqs \
+            --i-sequences $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/99_otus_refs.qza\
+            --p-num-degenerates 3 \
+            --o-clean-sequences $DIR_DATABASES/GreenGenes_DB/99_otus_refs-sidle-filt.qza
+    else
+        echo -e "${PURPLE}GG DB already filtered!"
+    fi
+
+    DB_NAME="99_otus_refs"
+    DB_PATH="GreenGenes_DB"
+    DB='greengenes' 
+    DB_FULL=silva-138-99-tax.qza
+fi 
+
+############### SIDLE ###############
+# Cretae output folders:
+mkdir -p $EXPERIMENT_PATH/sidle/databases
+mkdir -p $EXPERIMENT_PATH/sidle/alignments
+
+echo -e "${LIGHTCYAN}Please, enter again the amplicon name(s) used (ex: V3 / amp1 / V3,V4)"
+read ampliconNames
+array_amplicons=($(echo $ampliconNames | tr "," "\n"))
+
+region_alignment_files=()
+p_regions=()
+region_kmer_files=()
+
+reconstruct_db_command="qiime sidle reconstruct-database"
+reconstruct_counts_command="qiime sidle reconstruct-counts"
+
+for amplicon in "${array_amplicons[@]}"; do
+    echo -e "${LIGHTCYAN}Enter FORWARD primer for amplicon $amplicon"
+    read fwd_primer
+    echo -e "${LIGHTCYAN}Enter REVERSE primer for amplicon $amplicon"
+    read rev_primer
+    
+    echo -e "${PURPLE}Extracting reads for $amplicon amplicon to Qiime2..."
+    qiime feature-classifier extract-reads \
+        --i-sequences $DIR_DATABASES/$DB_PATH/${DB_NAME}-sidle-filt.qza \
+        --p-f-primer ${fwd_primer} \
+        --p-r-primer ${rev_primer} \
+        --o-reads $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza
+
+    # trim length needs to be the same used for dada2: 
+    INPUT_PATH=$EXPERIMENT_PATH/${amplicon}/dada2_output
+    trunc_lengths=()
+    for file in "$INPUT_PATH"/*-table-*.qza; do
+        # Save used trunc_length
+        if [[ $file =~ ([0-9]+)\.qza$ ]]; then
+            trunc_length="${BASH_REMATCH[1]}"
+            trunc_lengths+=("$trunc_length")
+        fi
+    done
+    first_trunc_length="${trunc_lengths[0]}"
+
+    echo -e "${PURPLE}Preparing extracted region for $amplicon amplicon..."
+    qiime sidle prepare-extracted-region \
+        --i-sequences $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza \
+        --p-region ${amplicon} \
+        --p-fwd-primer ${fwd_primer} \
+        --p-rev-primer ${rev_primer} \
+        --p-trim-length ${first_trunc_length} \
+        --p-n-workers 4 \
+        --o-collapsed-kmers $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-kmers.qza \
+        --o-kmer-map $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-map.qza
+    
+    
+    echo -e "${PURPLE}Starting $amplicon region alignment..."
+    qiime sidle align-regional-kmers \
+        --i-kmers $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-kmers.qza \
+        --i-rep-seq $EXPERIMENT_PATH/${amplicon}/dada2_output/merged-${amplicon}-rep-seqs-paired-trun${first_trunc_length}.qza \
+        --p-region ${amplicon} \
+        --p-max-mismatch 2 \
+        --p-n-workers 4 \
+        --o-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${amplicon}-alignment.qza
+
+        #--p-chunk-size {params.chunk_size} \ ?¿?¿
+
+    qiime metadata tabulate \
+        --m-input-file $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${amplicon}-alignment.qza \
+        --o-visualization $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${amplicon}-alignment.qzv \
+        --verbose \
+
+    echo -e "${PURPLE}Amplicon $amplicon alignment finished!"
+
+    p_reg="--p-region ${amplicon}"
+    reg_alignment="--i-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${amplicon}-alignment.qza"
+    kmer_map_file="--i-kmer-map $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-map.qza"
+
+    reconstruct_db_command+=" ${p_reg} ${reg_alignment} ${kmer_map_file}"
+
+    reg_table="--i-regional-table $EXPERIMENT_PATH/${amplicon}/dada2_output/merged-${amplicon}-table-paired-trun${first_trunc_length}.qza"
+
+    reconstruct_counts_command+=" ${p_reg} ${reg_alignment} ${reg_table}"
+
+done
+
+
+mkdir -p $EXPERIMENT_PATH/sidle/reconstruction
+
+# Finish reconstruct_db_command
+reconstruct_db_command+=" --p-n-workers 4 --o-database-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza --o-database-summary $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza"
+
+# Run reconstruct_db_command
+eval $reconstruct_db_command
+
+qiime metadata tabulate \
+ --m-input-file $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza \
+ --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qzv
+
+
+# Finish reconstruct_counts_command
+reconstruct_counts_command+=" --i-database-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza --i-database-summary $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza --p-n-workers 4 --o-reconstructed-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza"
+
+# Run reconstruct_db_command
+eval $reconstruct_counts_command
+
+qiime feature-table summarize \
+ --i-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza \
+ --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-tablee.qzv
+
+qiime tools export \
+ --input-path $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza \
+ --output-path $EXPERIMENT_PATH/sidle/reconstruction
+
+
+biom convert \
+    -i $EXPERIMENT_PATH/sidle/reconstruction/feature-table.biom \
+    -o $EXPERIMENT_PATH/sidle/${DB_NAME}-sidle-filt-feature-table.tsv \
+    --to-tsv
+
+
+qiime sidle reconstruct-taxonomy \
+ --i-reconstruction-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza \
+ --i-taxonomy $DIR_DATABASES/${DB_PATH}/${DB_FULL} \
+ --p-database $DB \
+ --p-define-missing 'inherit' \
+ --o-reconstructed-taxonomy $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-taxonomy.qza
+
+qiime metadata tabulate \
+ --m-input-file $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-taxonomy.qza \
+ --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-taxonomy.qzv
+
+ qiime tools export \
+ --input-path $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-taxonomy.qza \
+ --output-path $EXPERIMENT_PATH/sidle

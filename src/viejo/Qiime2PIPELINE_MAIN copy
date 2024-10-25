@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Initialize parameters and functions:
+source initialize_parameters.sh
+source functions.sh
+
+#We need to know many things before start:
+echo -e "${PURPLE} Before we start... please answer the following questions:
+${ORANGE}1) Which sequencer did you perform the sequencing with?${LIGHTCYAN}(Write IT for IonTorrent or IL for Illumina):"
+read sequencer
+
+echo -e "${ORANGE}2) Did you use the 16S Metagenomic Kit from ThermoFisher or other primers?${LIGHTCYAN}(Write Kit or Primers): "
+read kitPrimer
+
+echo -e "${ORANGE}3) Do your samples come from different sequenciations?${LIGHTCYAN}(Write Yes or No): "
+read difSequenciations
+
+
+if [ ${difSequenciations} == "Yes" ]; then
+    echo -e "${ORANGE}First of all, make sure you create a FOLDER FOR THE ANALYSIS (inside EXPERIMENTS folder), no matter the name you choose. This folder needs to contain at least 2 files: samples-manifest.tsv and samples-metadata.tsv, that you should also had previously created. As your samples where sequenced in different runs, the main folder that you have already created for the experiment needs to contain a sample-metadata.tsv and a sample-manifest.tsv file for each run (Note that you will find examples inside EXAMPLE_FILES. Please, first read the important_notes file)."
+
+    echo -e "${ORANGE} Please, name them as follows:
+    samples-manifest-runXXX.tsv and samples-metadata-runXXX.tsv, being XXX the number you want (Ex: samples-manifest-run1.tsv). Besides that, it is necessary to have a global/general sample-metadata.tsv with the information of each sample, combining all the previous metadata files. ${LIGHTCYAN}"
+
+else
+    echo -e "${ORANGE}First of all, make sure you create a FOLDER FOR THE ANALYSIS (inside EXPERIMENTS folder), no matter the name you choose. This folder needs to contain at least 2 files: samples-manifest.tsv and samples-metadata.tsv, that you should also had previously created (Note that you will find examples inside EXAMPLE_FILES. Please, first read the important_notes file).${LIGHTCYAN}"
+
+fi
+
+
+# Ask for the experiment name and check if the user has introduced a valid folder:
+while read -ep "Now, please, enter the experiment name of the analysis (exactly the same name of the folder created in EXPERIMENTS path): " AnalysisName; do
+    if [ ! -d "${DIR_EXPERIMENTS}/${AnalysisName}" ]; then
+         echo -e "${RED}${AnalysisName} does not exists - please enter a valid directory path${LIGHTCYAN}."
+    else
+        cd ${DIR_EXPERIMENTS}/${AnalysisName}
+        break
+    fi
+done
+
+
+# Activate Qiime2 environment
+echo -e "${PURPLE}Activating Qiime2..."
+source $DIR_CONDA
+conda activate $QIIME2_ENV_NAME
+cd ${DIR_EXPERIMENTS}/${AnalysisName}
+
+createReport_experiment $AnalysisName $kitPrimer $difSequenciations $sequencer
+stepPerform $kitPrimer $difSequenciations $sequencer
+
+
+
+
+

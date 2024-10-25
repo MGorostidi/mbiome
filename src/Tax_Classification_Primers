@@ -1,0 +1,22 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+echo -e "${ORANGE} For the taxonomic classification you can both, perform a classification by Vregion against a reference database OR, perform SIDLE, that will make a reconstruction of all the Vregions. ${LIGHTCYAN}Please, choose between 'byregion', 'sidle' or 'both':"
+    read taxClassification
+
+# Decide taxonomic classification
+if test ${taxClassification} == "byregion"; then
+    echo -e "${PURPLE}Continuing with by V region classification..."
+    bash $DIR/src/Tax_Classification_Primers_byRegion
+
+elif test ${taxClassification} == "sidle"; then
+    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+    bash $DIR/src/Tax_Classification_Primers_Sidle_Reconstruction
+
+elif test ${taxClassification} == "both"; then
+    echo -e "${PURPLE}Continuing with by V region classification..."
+    bash $DIR/src/Tax_Classification_Primers_byRegion
+    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+    bash $DIR/src/Tax_Classification_Primers_Sidle_Reconstruction
+fi

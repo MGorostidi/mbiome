@@ -33,8 +33,17 @@ qiime tools export \
 --output-path ${CURRENT_DIR}/Picrust2_${tableGroup}/exported-fna-fasta-file-${tableGroup}
 
 echo -e "${PURPLE}Activating and running Picrust2..."
-source $DIR_CONDA
-conda activate picrust2
+# conda init
+# conda deactivate
+# source $DIR_CONDA
+#conda init
+# which conda
+
+
+# echo "conda dir 2:"
+# echo $DIR_CONDA
+
+conda activate /home/unidad/miniconda3/envs/picrust2
 picrust2_pipeline.py -s ${CURRENT_DIR}/Picrust2_${tableGroup}/exported-fna-fasta-file-${tableGroup}/dna-sequences.fasta -i ${CURRENT_DIR}/Picrust2_${tableGroup}/exported-feature-table-${tableGroup}/feature-table.biom -o ${CURRENT_DIR}/Picrust2_${tableGroup}/picrust2_out_pipeline_${tableGroup} -p 4
 
 echo -e "${LIGHTCYAN}You should be seeing a huge list of numbers and letters (feature IDs actually) above... These are the FeatureIDs that are removed from the analysis due to poor quality alignment, so.. JUST IN CASE, I would copy and paste them in a TXT file :D "

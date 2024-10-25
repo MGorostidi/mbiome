@@ -1,0 +1,92 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+# Visualize the quality graphs for decide the DADA2 parameters. 
+echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples.qzv) and decide the length of reads, 
+so we can trunc by quality. Take a look to the graph that has been opened up."
+
+echo -e "$ORANGE If you have previously decided to perform CUTADAPT because you knew the exact primer sequences,
+ now you should choose a 0 (zero) in the trimming parameters. If not, you should select a trimming length that 
+ removes the lower quality base pairs from the left of the quality graph."
+
+qiime tools view ${CURRENT_DIR}/samples.qzv
+
+# Ask for truncating and trimming parameters:
+echo -e "${LIGHTCYAN}\n Enter truncating length for Forward sequences"
+read trunc_forward
+echo -e "${LIGHTCYAN} Enter truncating length for Reverse sequences"
+read trunc_reverse
+echo -e "${LIGHTCYAN} Enter trimming length for Forward sequences"
+read trim_forward
+echo -e "${LIGHTCYAN} Enter trimming length for Reverse sequences"
+read trim_reverse
+
+mkdir $CURRENT_DIR/Dada2_output
+
+# Dada2 step
+echo -e "${PURPLE}Performing Dada2...${NC}"
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs ${CURRENT_DIR}/samples.qza\
+  --p-trunc-len-f ${trunc_forward} \
+  --p-trunc-len-r ${trunc_reverse} \
+  --p-trim-left-f ${trim_forward} \
+  --p-trim-left-r ${trim_reverse} \
+  --p-n-threads 4 \
+  --o-representative-sequences ${CURRENT_DIR}/Dada2_output/rep-seqs-paired.qza \
+  --o-table ${CURRENT_DIR}/Dada2_output/table-paired.qza \
+  --o-denoising-stats ${CURRENT_DIR}/Dada2_output/stats-dada2-paired.qza \
+  --verbose
+
+
+#Visualizing Resulting data...
+#Converting DADA2 artifact .qza to .qzv
+qiime feature-table summarize \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-paired.qza \
+  --o-visualization ${CURRENT_DIR}/Dada2_output/table-paired.qzv \
+  --m-sample-metadata-file ${CURRENT_DIR}/samples-metadata.tsv
+
+qiime feature-table tabulate-seqs \
+  --i-data ${CURRENT_DIR}/Dada2_output/rep-seqs-paired.qza \
+  --o-visualization ${CURRENT_DIR}/Dada2_output/rep-seqs-paired.qzv
+
+qiime metadata tabulate \
+  --m-input-file ${CURRENT_DIR}/Dada2_output/stats-dada2-paired.qza \
+  --o-visualization ${CURRENT_DIR}/Dada2_output/stats-dada2-paired.qzv
+
+
+# Create report with the parameters used:
+echo -e "${Purple} Creating summary report..."
+echo "This is a summary report of the parameters used in DADA2 step: 
+                        Truncating Length for Forward sequences: ${trunc_forward}
+                        Truncating Length for Reverse sequences: ${trunc_reverse}
+                        Trimming Length for Forward sequences: ${trim_forward}
+                        Trimming Length for Reverse sequences: ${trim_reverse}" >| ${CURRENT_DIR}/Dada2_output/DADA2_parameters_report.txt
+
+
+# Ask if the DADA2 step has to be repeated:
+echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each pgm run:"
+
+#visualize stats .qzv
+qiime tools view ${CURRENT_DIR}/Dada2_output/stats-dada2-paired.qzv
+
+
+echo -e "${ORANGE}Once you have vizualize the statistic table... ${LIGHTCYAN} Do you want to re-run dada2? (Write Yes or No)"
+read repeatDada2
+   
+if test ${repeatDada2} == "Yes"; then 
+    echo -e "${PURPLE}Running DADA2 again..."
+    bash $DIR/src/IL_Primers_Dada2
+
+elif test ${repeatDada2} == "No"; then
+    echo -e "${PURPLE}Going forward to Taxonomic Classification..."
+    bash $DIR/src/TaxonomicClassification
+fi
+
+
+
+
+

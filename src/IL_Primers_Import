@@ -1,0 +1,23 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+EXPERIMENT_PATH=$PWD
+
+#Ask for run ID numbers
+echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+        read runNums
+
+array_runs=($(echo $runNums | tr "," "\n"))
+
+for run in "${array_runs[@]}"; do
+  echo -e "${PURPLE}Importing Illumina paired-end samples from run $run to Qiime2...${NC}"
+  qiime tools import \
+    --type 'SampleData[PairedEndSequencesWithQuality]' \
+    --input-path ${EXPERIMENT_PATH}/samples-manifest-run${run}.tsv \
+    --input-format PairedEndFastqManifestPhred33V2 \
+    --output-path ${EXPERIMENT_PATH}/samples-run${run}.qza
+done
+
+# Perform Cutadapt step
+bash $DIR/src/IL_Primers_Cutadapt

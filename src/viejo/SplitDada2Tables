@@ -1,0 +1,100 @@
+#!/bin/bash
+################___I wanted to use different colors in the terminal for different functions, so I need to initialize them (ref: https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux)
+
+lightCyan='\033[1;36m'
+RED='\033[0;31m'
+Purple='\033[0;35m'
+White='\033[1;37m'
+ORANGE="\033[0;33m"
+NC='\033[0m' # No Color
+
+#We store current path:
+DIR=$PWD
+#DIR="/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Experiments/PGM-250-ELAsamples"
+
+echo -e "${ORANGE}This step is optional, however you may be interested in splitting tables based on metadata groups, abundance or other methods. For example, Dada2 tables, that contain featuresID, can be splitted into MS table and HC table, so we can apply picrust algorithm, for instance, to each table and perform a functional analysis separately."
+echo -e "${lightCyan}Therefore, would you like to split any table? (Write Yes or No)"
+read splitYesNo
+
+ if test ${splitYesNo} == "Yes"
+                    then
+
+
+            echo -e "${lightCyan}Please enter the exact name of the table you want to split: (ex:table-pyro-conTrun150)"
+            read tableName
+
+            echo -e "${lightCyan}Please enter the exact name of the rep-seqs you want to split: (ex:rep-seqs-pyro-conTrun150)"
+            read repSeqsName
+
+            echo -e "${Purple}Activating Qiime2..."
+                source /home/unidad/miniconda3/etc/profile.d/conda.sh # Or path to where your conda is
+                conda activate qiime2-2022.2
+
+
+            echo -e "${ORANGE} There are many different methods for spliting/filtering our tables."
+            echo "1) Filter features by abundance"
+            echo "2) Filter features by appearance in min num of samples"
+            echo "3) Filter samples that don't contain a min num of features"
+            echo "4) Filter samples by metadata column"
+            echo -e "${lightCyan}Please, select your option: (Write 1,2,3 or 4)"
+            read filterOption
+
+            #
+            #if test ${filterOption} == "1"
+            #    then
+            #echo "In order to filter your table by a metadata column, you need to specify the column and the group inside it you want to filter. Write here your column name (ex: status):"
+            #elif test ${filterOption} == "2"
+            #then
+            #echo "In order to filter your table by a metadata column, you need to specify the column and the group inside it you want to filter. Write here your column name (ex: status):"
+            #elif test ${filterOption} == "3"
+            #then
+            #echo "In order to filter your table by a metadata column, you need to specify the column and the group inside it you want to filter. Write here your column name (ex: status):"
+            #elif test ${filterOption} == "4"
+            #then
+            echo -e "${ORANGE}In order to filter your table by a metadata column, you need to specify the column and the group inside it you want to filter. ${lightCyan} Write here your column name (ex: status):"
+            read metadataColumn
+              echo "Now please the groups inside your metadata column (Write them like: Control,Patient):"
+            read metadataGroup
+            my_string=$metadataGroup
+
+            my_array=($(echo $my_string | tr "," "\n"))
+
+            for metadataGroup in "${my_array[@]}"
+                do
+
+            #We filter the table.qza
+            qiime feature-table filter-samples \
+            --i-table ${DIR}/Dada2_output/${tableName}.qza \
+            --m-metadata-file ${DIR}/samples-metadata.tsv \
+            --p-where "[${metadataColumn}]='${metadataGroup}'"  \
+            --o-filtered-table ${DIR}/Dada2_output/${tableName}-filtered-${metadataGroup}.qza
+#            #We visualize the table.qza
+#            qiime feature-table summarize \
+#              --i-table ${DIR}/Dada2_output/${tableName}-filtered-${metadataGroup}.qza \
+#              --o-visualization ${DIR}/Dada2_output/${tableName}-filtered-${metadataGroup}.qzv \
+#              --m-sample-metadata-file ${DIR}/samples-metadata.tsv
+
+            #We filter the rep-seqs.qza
+            qiime feature-table filter-seqs \
+                --i-data ${DIR}/Dada2_output/${repSeqsName}.qza \
+                --i-table ${DIR}/Dada2_output/${tableName}-filtered-${metadataGroup}.qza \
+                --o-filtered-data ${DIR}/Dada2_output/${repSeqsName}-filtered-${metadataGroup}.qza
+            done
+
+            #else 
+            #        then  
+            #    echo -e "${RED} You haven't choosen any possible filtering option"
+            #fi
+            #
+            #
+
+                bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/5_PICRUSTpipeline
+
+
+
+
+ elif test ${splitYesNo} == "No"
+            then  
+                bash /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/ANALISYS/Steps_and_Scripts/3_Qiime2_Pipelines/src/5_PICRUSTpipeline
+
+fi

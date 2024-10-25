@@ -1,0 +1,74 @@
+#!/bin/bash
+
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+
+#Ask for run ID numbers
+echo -e "${PURPLE}Performing FastQC analysis..."
+
+MANIFEST_FILE=${CURRENT_DIR}/samples-manifest.tsv
+
+echo -e "${ORANGE}Please, write down the exact name of the column from your manifest file that contains the unique sampleIDs ${LIGHTCYAN} (Ex: sample-id)..."
+read sample_id
+echo -e "${ORANGE}Please, write down the exact name of the column from your manifest file that contains the unique sampleIDs ${LIGHTCYAN} (Ex: sample-id)..."
+read sample_path
+
+
+mkdir $CURRENT_DIR/FastQC
+
+
+
+# Archivo .tsv con la lista de muestras
+TSV_FILE="samples.tsv"
+
+# Directorio donde se guardarán los resultados de FastQC
+OUTPUT_DIR="fastqc_results"
+mkdir -p "$OUTPUT_DIR"
+
+# Ejecutar FastQC en cada archivo listado en el .tsv
+while IFS=$'\t'
+do
+    # Saltar la línea de encabezado
+    if [ "$sample_id" != "sample_id" ]; then
+        echo "Running FastQC on sample: $sample_id, file: $sample_path"
+        fastqc -o "$OUTPUT_DIR" "$sample_path"
+    fi
+done < "$TSV_FILE"
+
+echo "FastQC analysis complete. Results are in the $OUTPUT_DIR directory."
+
+
+
+
+
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+echo -e "${ORANGE}Please, assure that you have a sample-manifest.tsv file prepared."
+echo -e "${PURPLE}Importing samples.."
+
+# Importing samples
+qiime tools import \
+  --type 'SampleData[SequencesWithQuality]' \
+  --input-path ${CURRENT_DIR}/samples-manifest.tsv \
+  --input-format SingleEndFastqManifestPhred33V2 \
+  --output-path ${CURRENT_DIR}/samples.qza
+
+qiime demux summarize \
+  --i-data  ${CURRENT_DIR}/samples.qza \
+  --o-visualization ${CURRENT_DIR}/samples-demux.qzv
+
+echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. Take a look to the graph that has been opened up."
+
+qiime tools view ${CURRENT_DIR}/samples-demux.qzv
+
+bash $DIR/src/IT_16Skit_Dada2
+
+

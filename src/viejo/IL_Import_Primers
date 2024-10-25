@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+echo -e "${ORANGE}Please, assure that you have a sample-manifest.tsv file prepared."
+
+echo -e "${PURPLE}Importing samples..."
+# Importing samples
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path ${CURRENT_DIR}/samples-manifest.tsv \
+  --input-format PairedEndFastqManifestPhred33V2 \
+  --output-path ${CURRENT_DIR}/samples.qza
+
+# Perform Cutadapt step
+bash $DIR/src/IL_Cutadapt_Primers

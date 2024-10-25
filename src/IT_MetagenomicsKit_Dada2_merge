@@ -2,8 +2,7 @@
 
 source ../../initialize_parameters.sh
 
-#We store current path:
-CURRENT_DIR=$PWD
+EXPERIMENT_PATH=$PWD
 
 echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
         read runNums
@@ -21,13 +20,19 @@ for Vregion in "${array_regions[@]}"; do
     input_files_table=()
     trunc_lengths=()
     for file in "$DADA2_PATH"/*-table-*.qza; do
-        input_files_table+=("--i-tables $file")
-        # Save used trunc_length
-        if [[ $file =~ ([0-9]+)\.qza$ ]]; then
-            trunc_length="${BASH_REMATCH[1]}"
-            trunc_lengths+=("$trunc_length")
+        # Excluir los archivos que contienen la palabra "merged"
+        if [[ $file != *"merged"* ]]; then
+            # Añadir el archivo a la lista de input_files_table
+            input_files_table+=("--i-tables $file")
+            
+            # Guardar trunc_length si coincide con un número antes de .qza
+            if [[ $file =~ ([0-9]+)\.qza$ ]]; then
+                trunc_length="${BASH_REMATCH[1]}"
+                trunc_lengths+=("$trunc_length")
+            fi
         fi
     done
+
 
     first_trunc_length="${trunc_lengths[0]}"
 
@@ -45,7 +50,11 @@ for Vregion in "${array_regions[@]}"; do
     # Find all the rep-seqs.qza files in the dada2-output folder
     input_files_repseq=()
     for file in "$DADA2_PATH"/*-rep-seqs-*.qza; do
-        input_files_repseq+=("--i-data $file")
+        # Excluir los archivos que contienen la palabra "merged"
+        if [[ $file != *"merged"* ]]; then
+            # Añadir el archivo a la lista de input_files_table
+            input_files_repseq+=("--i-data $file")
+        fi
     done
 
     # Create the merging qiime2 command line:
@@ -59,21 +68,24 @@ for Vregion in "${array_regions[@]}"; do
         --o-visualization $DADA2_PATH/merged-${Vregion}-rep-seqs-pyro-trun${first_trunc_length}.qzv
 done
 
-echo -e "${ORANGE} For the taxonomic classification you can both, perform a classification by Vregion against a reference database OR, perform SIDLE, that will make a reconstruction of all the Vregions. ${LIGHTCYAN}Please, choose between 'byregion', 'sidle' or 'both':"
-    read taxClassification
+#P Perform taxonomic classification:
+bash $DIR/src/IT_MetagenomicsKit_tax_classification
 
-# Decide taxonomic classification
-if test ${taxClassification} == "byregion"; then
-    echo -e "${PURPLE}Continuing with by V region classification..."
-    bash $DIR/src/IT_MetagenomicsKit_byRegion_tax_classification
+# echo -e "${ORANGE} For the taxonomic classification you can both, perform a classification by Vregion against a reference database OR, perform SIDLE, that will make a reconstruction of all the Vregions. ${LIGHTCYAN}Please, choose between 'byregion', 'sidle' or 'both':"
+#     read taxClassification
 
-elif test ${taxClassification} == "sidle"; then
-    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
-    bash $DIR/src/IT_MetagenomicsKit_Sidle_reconstruction
+# # Decide taxonomic classification
+# if test ${taxClassification} == "byregion"; then
+#     echo -e "${PURPLE}Continuing with by V region classification..."
+#     bash $DIR/src/IT_MetagenomicsKit_byRegion_tax_classification
 
-elif test ${taxClassification} == "both"; then
-    echo -e "${PURPLE}Continuing with by V region classification..."
-    bash $DIR/src/IT_MetagenomicsKit_byRegion_tax_classification
-    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
-    bash $DIR/src/IT_MetagenomicsKit_Sidle_reconstruction
-fi
+# elif test ${taxClassification} == "sidle"; then
+#     echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+#     bash $DIR/src/IT_MetagenomicsKit_Sidle_reconstruction
+
+# elif test ${taxClassification} == "both"; then
+#     echo -e "${PURPLE}Continuing with by V region classification..."
+#     bash $DIR/src/IT_MetagenomicsKit_byRegion_tax_classification
+#     echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+#     bash $DIR/src/IT_MetagenomicsKit_Sidle_reconstruction
+# fi

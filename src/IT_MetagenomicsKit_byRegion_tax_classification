@@ -2,9 +2,7 @@
 
 source ../../initialize_parameters.sh
 
-#We store current path:
-CURRENT_DIR=$PWD
-
+EXPERIMENT_PATH=$PWD
 
 my_regions=$V_REGIONS
 array_regions=($(echo $my_regions | tr "," "\n"))

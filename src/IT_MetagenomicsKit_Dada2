@@ -2,8 +2,7 @@
 
 source ../../initialize_parameters.sh
 
-#We store current path:
-CURRENT_DIR=$PWD
+EXPERIMENT_PATH=$PWD
 
 echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
         read runNums

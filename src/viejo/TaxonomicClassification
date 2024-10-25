@@ -1,0 +1,184 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+echo -e "${ORANGE} Please enter if the sequencing has been IonTorrent (then write pyro) or if it has been through Illumina (write if it has been paired or single). ${LIGHTCYAN} Options (pyro, paired, single):"
+read seqType
+
+echo -e "${LIGHTCYAN}Now please, specify the Analysis Type you are performing (please write ITS or 16S):"
+read analysisType
+
+mkdir ${CURRENT_DIR}/Taxonomic-Analysis
+
+if test ${analysisType} == "16S"; then
+  # ref to --p-strand 'both' option: https://forum.qiime2.org/t/output-in-vsearch-cluster-features-closed-reference-differs-depending-on-p-strand-option/17272
+
+  #VSEARCH classifier
+  echo -e "${PURPLE}Starting Taxonomic Classification.... Vsearch Classifier${NC}"
+  if test ${seqType} == "single"; then
+        qiime feature-classifier classify-consensus-vsearch \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otus_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otu_taxonomy.qza \
+         --p-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-gg97-vsearch.qza
+
+  elif [ ${seqType} == "paired" ] || [ ${seqType} == "pyro" ]; then
+          qiime feature-classifier classify-consensus-vsearch \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otus_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otu_taxonomy.qza \
+         --p-strand 'both' \
+         --p-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-gg97-vsearch.qza
+  fi
+  
+  qiime metadata tabulate \
+  --m-input-file ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qzv
+
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-vsearch.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-vsearch.qzv
+
+  echo -e "${PURPLE}Extracting taxonomy abundance results... Vsearch Classifier${NC}"
+  mkdir ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-vsearch
+  qiime tools export --input-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-vsearch.qzv --output-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-vsearch
+  
+  # BLAST classifier
+  echo -e "${PURPLE}Starting Taxonomic Classification.... BLAST Classifier${NC}"
+
+  if test ${seqType} == "single"; then
+        qiime feature-classifier classify-consensus-blast \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otus_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otu_taxonomy.qza \
+         --p-num-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-gg97-blast.qza
+
+  elif [ ${seqType} == "paired" ] || [ ${seqType} == "pyro" ]; then
+          qiime feature-classifier classify-consensus-blast \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otus_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/97_otu_taxonomy.qza \
+         --p-strand 'both' \
+         --p-num-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-gg97-blast.qza
+  fi
+
+  qiime metadata tabulate \
+  --m-input-file ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza  \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qzv
+
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-gg97-blast.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-blast.qzv
+
+  echo -e "${PURPLE}Extracting taxonomy abundance results... BLAST Classifier${NC}"
+  mkdir ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-blast
+  qiime tools export --input-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-blast.qzv --output-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-gg97-blast
+  
+  echo "Since the experiment analyzes 16S data, Green Genes DataBase, with 97% similarity, is used for the Taxonomic classification step.
+        The classifier used is classify-consensus-vsearch, based on the Qiime2Forum reccomendation (in the IonTorrent data pipeline discussion). 
+        However, in another Qiime2Forum post, they suggest us to use classify-consensus-blast, since it performs a more local analysis. 
+        Therefore, in the taxonomic step both classifators are run. After that a comparison will be made.
+        Besides, when the sequencing is 'paired' or 'pyro' the --p-strand 'both' parameter is used, as recommended in the forum, 
+        so every read can be reoriented in the same direction for the taxonomic classification." >| ${CURRENT_DIR}/Taxonomic-Analysis/Taxonomic_16S_report.txt
+
+elif test ${analysisType} == "ITS"; then
+  #VSEARCH classifier
+  echo -e "${PURPLE}Starting Taxonomic Classification.... Vsearch Classifier${NC}"
+  if test ${seqType} == "single"; then
+        qiime feature-classifier classify-consensus-vsearch \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/UNITE_DB/unite_dyn_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/UNITE_DB/unite_dyn_taxa.qza \
+         --p-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-unite-vsearch.qza
+
+  elif [ ${seqType} == "paired" ] || [ ${seqType} == "pyro" ]; then
+          qiime feature-classifier classify-consensus-vsearch \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/UNITE_DB/unite_dyn_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/UNITE_DB/unite_dyn_taxa.qza \
+         --p-strand 'both' \
+         --p-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-unite-vsearch.qza
+  fi
+  
+  qiime metadata tabulate \
+  --m-input-file ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qzv
+
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-vsearch.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-vsearch.qzv
+
+  echo -e "${PURPLE}Extracting taxonomy abundance results... Vsearch Classifier${NC}"
+  mkdir ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-vsearch
+  qiime tools export --input-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-vsearch.qzv --output-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-vsearch
+  
+  # BLAST classifier
+  echo -e "${PURPLE}Starting Taxonomic Classification.... BLAST Classifier${NC}"
+
+  if test ${seqType} == "single"; then
+        qiime feature-classifier classify-consensus-blast \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/UNITE_DB/unite_dyn_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/UNITE_DB/unite_dyn_taxa.qza \
+         --p-num-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-unite-blast.qza
+
+  elif [ ${seqType} == "paired" ] || [ ${seqType} == "pyro" ]; then
+          qiime feature-classifier classify-consensus-blast \
+         --i-query ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+         --i-reference-reads $DIR/DATABASES/UNITE_DB/unite_dyn_refs.qza \
+         --i-reference-taxonomy $DIR/DATABASES/UNITE_DB/unite_dyn_taxa.qza \
+         --p-strand 'both' \
+         --p-num-threads 4 \
+         --o-classification ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza \
+         --o-search-results ${CURRENT_DIR}/Taxonomic-Analysis/search-results-${seqType}-unite-blast.qza
+  fi
+
+  qiime metadata tabulate \
+  --m-input-file ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza  \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qzv
+
+  qiime taxa barplot \
+  --i-table ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
+  --i-taxonomy ${CURRENT_DIR}/Taxonomic-Analysis/taxonomy-${seqType}-unite-blast.qza \
+  --m-metadata-file ${CURRENT_DIR}/samples-metadata.tsv \
+  --o-visualization ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-blast.qzv
+
+  echo -e "${PURPLE}Extracting taxonomy abundance results... BLAST Classifier${NC}"
+  mkdir ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-blast
+  qiime tools export --input-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-blast.qzv --output-path ${CURRENT_DIR}/Taxonomic-Analysis/taxaBarplot-${seqType}-unite-blast
+  
+
+  echo "Since the experiment analyzes ITS data, UNITE DataBase, is used for the Taxonomic classification step.
+        The classifier used is classify-consensus-vsearch, based on the Qiime2Forum reccomendation (in the IonTorrent data pipeline discussion). 
+        However, in another Qiime2Forum post, they suggest us to use classify-consensus-blast, since it performs a more local analysis. 
+        Therefore, in the taxonomic step both classifators are run. After that a comparison will be made.
+        Besides, when the sequencing is 'paired' or 'pyro' the --p-strand 'both' parameter is used, as recommended in the forum, 
+        so every read can be reoriented in the same direction for the taxonomic classification." >| ${CURRENT_DIR}/Taxonomic-Analysis/Taxonomic_ITS_report.txt
+fi
+
+bash $DIR/src/Diversity
+
+bash $DIR/src/METNET

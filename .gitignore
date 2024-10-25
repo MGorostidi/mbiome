@@ -1,0 +1,78 @@
+## Output / input data
+*.Rda
+*.pdf
+*.csv
+*.json
+*.html
+*.sav
+*.xlsx
+*.zip
+*.png
+*.docx
+*.txt
+!requirements.txt
+
+# System files
+*.DS_Store
+
+## Python
+
+# Data related folders
+DATABASES/
+DATABASES/*
+
+# Output related folders
+EXPERIMENTS/
+/EXPERIMENTS/
+/EXPERIMENTS/*
+
+# Other folders:
+q2-metnet/
+/q2-metnet/
+/q2-metnet/*
+
+# Virtual environment
+*-venv/
+
+# Visual Studio Code Settings
+.vscode/
+
+# Jupyter Notebook
+*.ipynb
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Python package compilation
+*.egg-info/
+*.pyc
+
+# Pickle models
+*.pkl
+
+# cache
+*/__pycache__/
+
+## R
+
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+
+# RStudio files
+.Rproj.user/
+
+# knitr and R markdown default cache directories
+/*_cache/
+/cache/
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+.Rproj.user
+
