@@ -36,7 +36,7 @@ cd mbiome
 
 ### Installing: 
 
-Mbiome includes a setup.py file in order to install qiime2 and all the necessary packages and plugins. It installs Qiime2 Amplicon distribution for Linux (Check the link for more information: https://docs.qiime2.org/2024.5/install/native/#install-qiime-2-within-a-conda-environment )
+Mbiome includes a setup.sh file in order to install qiime2 and all the necessary packages and plugins. It installs Qiime2 Amplicon distribution for Linux (Check the link for more information: https://docs.qiime2.org/2024.5/install/native/#install-qiime-2-within-a-conda-environment )
 
 1. Make sure Miniconda is installed in your computer (follow instructions in https://docs.anaconda.com/free/miniconda/)
 2. Run setup.py file: 
