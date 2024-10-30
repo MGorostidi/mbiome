@@ -1,0 +1,136 @@
+#!/bin/bash
+
+source ../initialize_parameters.sh
+
+EXPERIMENT_DIR=$PWD
+#EXPERIMENT_DIR=/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16S
+
+#Ask the approach to follow: AGREDA or AGORA:
+echo -e "${ORANGE} Please select the approach to follow. ${LIGHTCYAN} Options (AGREDA, AGORAv103):"
+read pipelineSelection
+
+#Ask for the taxonomy level:
+echo -e "${ORANGE} Please select the taxonomy level you want to analyze. ${LIGHTCYAN} Ranging from kingdom (k) to species (s):"
+read taxLevel
+
+#Ask for the metadata column and the name of the goups correspondign to condition or to control:
+echo -e "${LIGHTCYAN} Please write the name of the metadata column that contains the groups:"
+read metadataCol
+echo -e "${LIGHTCYAN} Now the name of the group that refers to the "condition" or disease (ex: MS):"
+read conditionGroup
+echo -e "${LIGHTCYAN} Now the name of the group that refers to the "control" (ex: HC):"
+read controlGroup
+
+# Ask for exchange parameter:
+echo -e "${ORANGE} It is necessary to decide if we want the focus of the differential analysis to be input (and may be output as well) or just output. ${LIGHTCYAN} Write down 'False' for the first option and 'True' for just output:"
+read inputInterest
+
+
+echo -e "${ORANGE} Since different approaches are integrated in Mbiome workflow, it is neccessary to explicitly write down in which table you want to perform the Metnet functional analysis.  
+${LIGHTCYAN} Write down the whole path to the dada2 table output (Ex: /home/mbiome/EXPERIMENTS/Experiment1/V3/dada2_output/merged-V3-table-pyro-trun140.qza):"
+read asv_table
+
+echo -e "${LIGHTCYAN} And now, its taxonomic classification taxa.qza (Ex: /home/mbiome/EXPERIMENTS/Experiment1/V3/taxonomic_analysis/V3-taxonomy-gg99-vsearch-dada2trun140.qza):"
+read taxa_table
+
+file_name=$(echo "$taxa_table" | sed 's:.*/\([^/]*\)\.qza:\1:')
+
+mkdir -p ${EXPERIMENT_DIR}/Metnet_${file_name}
+#Generate the normalized scores tables
+qiime metnet generateFeatures \
+	--i-frequency $asv_table \
+	--i-taxa $taxa_table \
+	--p-selection  ${pipelineSelection} \
+	--p-level ${taxLevel} \
+	--o-reactions ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
+	--o-subsystems ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_scores.qza \
+	--o-xmatrix ${EXPERIMENT_DIR}/Metnet_${file_name}/Xmatrix.qza
+
+
+#Calculate differential analysis scores for exchange reactions
+qiime metnet differentialExchanges \
+	--i-reactions ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
+	--m-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+    --m-metadata-column $metadataCol \
+    --p-condition-name $conditionGroup \
+    --p-control-name $controlGroup \
+    --p-selection-model ${pipelineSelection} \
+    --p-input-interest True \
+	--o-differential-analysis ${EXPERIMENT_DIR}/Metnet_${file_name}/exchanges_rxns_differential.qza
+qiime tools export \
+    --input-path ${EXPERIMENT_DIR}/Metnet_${file_name}/exchanges_rxns_differential.qza \
+    --output-path ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_exch_rxns
+biom convert \
+    -i ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_exch_rxns/feature-table.biom \
+    -o ${EXPERIMENT_DIR}/Metnet_${file_name}/table_exch_rxns.tsv --to-tsv
+
+#Calculate differential analysis scores for any kind of reactions
+qiime metnet differentialReactions \
+	--i-reactions ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
+	--m-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+    --m-metadata-column $metadataCol \
+    --p-condition-name $conditionGroup \
+    --p-control-name $controlGroup \
+    --p-selection-model ${pipelineSelection} \
+	--o-differential-analysis ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_differential.qza
+
+qiime tools export \
+    --input-path ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_differential.qza \
+    --output-path ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_rxns
+biom convert \
+    -i ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_rxns/feature-table.biom \
+    -o ${EXPERIMENT_DIR}/Metnet_${file_name}/table_rxns.tsv --to-tsv
+
+
+#Calculate differential analysis scores for subsystems
+qiime metnet differentialSubSystems \
+    --i-subsystems ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_scores.qza \
+    --m-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+    --m-metadata-column $metadataCol \
+    --p-condition-name $conditionGroup \
+    --p-control-name $controlGroup \
+	--o-differential-analysis ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_differential.qza
+
+qiime tools export \
+    --input-path ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_differential.qza \
+    --output-path ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_subs
+biom convert \
+    -i ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_subs/feature-table.biom \
+    -o ${EXPERIMENT_DIR}/Metnet_${file_name}/table_subs.tsv --to-tsv
+
+
+
+
+#Generate the hierarchically-clustered heatmap
+qiime metnet plotClusteMap \
+	--i-table ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
+	--m-sample-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+	--m-sample-metadata-column $metadataCol \
+	--o-visualization ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_clustermap.qzv
+
+qiime tools view ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_clustermap.qzv
+
+qiime metnet plotClusteMap \
+	--i-table ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_scores.qza \
+	--m-sample-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+	--m-sample-metadata-column $metadataCol \
+	--o-visualization ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_clustermap.qzv
+
+qiime tools view ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_clustermap.qzv
+
+qiime metnet plotPCA \
+	--i-table ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
+	--m-sample-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+	--m-sample-metadata-column $metadataCol \
+	--o-visualization ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_pca.qzv
+
+qiime tools view ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_pca.qzv
+
+qiime metnet plotPCA \
+	--i-table ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_scores.qza \
+	--m-sample-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+	--m-sample-metadata-column $metadataCol \
+	--o-visualization ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_pca.qzv
+
+qiime tools view ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_pca.qzv
+
