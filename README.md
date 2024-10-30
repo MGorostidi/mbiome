@@ -41,7 +41,7 @@ Mbiome includes a setup.py file in order to install qiime2 and all the necessary
 1. Make sure Miniconda is installed in your computer (follow instructions in https://docs.anaconda.com/free/miniconda/)
 2. Run setup.py file: 
 ```shell
-python setup.py
+bash setup.sh
 ```
 <!-- 
 2. Update conda:
