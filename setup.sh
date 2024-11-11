@@ -35,6 +35,10 @@ conda install -c conda-forge -c bioconda -c qiime2 -c defaults xmltodict
 pip install git+https://github.com/jwdebelius/q2-sidle
 qiime dev refresh-cache
 
+# Taxonomic analysis:
+conda activate qiime2-amplicon-2024.2
+pip install adjustText
+
 
 # Create Picrust2 environment for Picrust2 analysis: 
 echo -e "${Purple} Create Picrust2 environment for Picrust2 analysis... ${White}"
