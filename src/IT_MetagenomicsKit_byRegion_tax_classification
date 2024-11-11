@@ -3,11 +3,21 @@
 source ../../initialize_parameters.sh
 
 EXPERIMENT_PATH=$PWD
+SCRIPTS_PATH=${DIR}/src
 
-my_regions=$V_REGIONS
-array_regions=($(echo $my_regions | tr "," "\n"))
+# my_regions=$V_REGIONS
+# array_regions=($(echo $my_regions | tr "," "\n"))
 
-for Vregion in "${array_regions[@]}"; do
+source ${EXPERIMENT_PATH}/config.env
+
+# Convert REGIONS into an array
+IFS=',' read -r -a regions_array <<< "$V_REGIONS"
+
+for Vregion in "${regions_array[@]}"; do
+
+    #Create metadata file for regions:
+    python3 ${SCRIPTS_PATH}/write_metadata_file.py ${EXPERIMENT_PATH} $Vregion
+
     #for Vregion in "${array_regions[@]}"; do
     DADA2_PATH=$EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output
     # Merge table.qza files:
@@ -24,7 +34,7 @@ for Vregion in "${array_regions[@]}"; do
 
     first_trunc_length="${trunc_lengths[0]}"
     
-    echo -e "${PURPLE}Running Taxonomic classification with GreenGenesDB vsearch classifier..${NC} "
+    echo -e "${PURPLE}Running Taxonomic classification of ${VRegion} with GreenGenesDB vsearch classifier..${NC} "
     mkdir $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/taxonomic_analysis
     ### Greengenes
     qiime feature-classifier classify-consensus-vsearch \
@@ -43,10 +53,11 @@ for Vregion in "${array_regions[@]}"; do
     qiime taxa barplot \
         --i-table $DADA2_PATH/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza \
         --i-taxonomy $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/taxonomic_analysis/${Vregion}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qza \
-        --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
-        --o-visualization $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/taxonomic_analysis/taxaBarplot-${seqType}-gg99-vsearch.qzv
+        --m-metadata-file $EXPERIMENT_PATH/samples-metadata-${Vregion}.tsv \
+        --o-visualization $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/taxonomic_analysis/taxaBarplot-${Vregion}-gg99-vsearch.qzv
+        #--m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
 
-    echo -e "${PURPLE}Running Taxonomic classification with SILVA DB vsearch classifier..${NC} "
+    echo -e "${PURPLE}Running Taxonomic classification of ${VRegion} with SILVA DB vsearch classifier..${NC} "
     ### SILVA
     qiime feature-classifier classify-consensus-vsearch \
         --i-query $DADA2_PATH/merged-${Vregion}-rep-seqs-pyro-trun${first_trunc_length}.qza  \
@@ -64,10 +75,11 @@ for Vregion in "${array_regions[@]}"; do
     qiime taxa barplot \
         --i-table $DADA2_PATH/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza \
         --i-taxonomy $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/taxonomic_analysis/${Vregion}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza \
-        --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
-        --o-visualization $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/taxonomic_analysis/taxaBarplot-${seqType}-silva-138-99-vsearch.qzv
+        --m-metadata-file $EXPERIMENT_PATH/samples-metadata-${Vregion}.tsv \
+        --o-visualization $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/taxonomic_analysis/taxaBarplot-${Vregion}-silva-138-99-vsearch.qzv
 
 
 done
 
 ### AÑADIR UN SUM DE TODAS LAS REGIONES????
+echo -e "\n${PURPLE}TAXONOMIC ANALYSIS BY REGION PERFORMED!"

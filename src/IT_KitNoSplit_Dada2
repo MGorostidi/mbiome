@@ -1,0 +1,88 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+EXPERIMENT_PATH=$PWD
+
+source ${EXPERIMENT_PATH}/config.env
+
+echo -e "\n${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. When we work with more than one run, we need to decide the truncating length based on all the .qzv samples created. Take a look to all the graphs (one for each run) that have been opened up. (You will need to quit the viewer, pressing 'q', for the next file to open)${NC}"
+
+mkdir -p $EXPERIMENT_PATH/dada2_output
+  
+
+for run in $(seq 1 $SEQUENCING_RUNS); do
+    echo -e "\n${PURPLE}Opening run $run .qzv visualization...${NC}"
+    qiime tools view ${EXPERIMENT_PATH}/import/samples-run${run}-demux.qzv
+done
+
+# Ask for truncating and trimming parameters:
+echo -e "\n${LIGHTCYAN} Enter truncating length (remember you need to have all runs into consideration)"
+read trunc_lenVal
+
+
+for run in $(seq 1 $SEQUENCING_RUNS); do
+
+  # Dada2 step
+  echo -e "${PURPLE}Performing Dada2 for run $run...${NC}"
+  qiime dada2 denoise-pyro \
+    --i-demultiplexed-seqs ${EXPERIMENT_PATH}/import/samples-run${run}.qza \
+    --p-trunc-len ${trunc_lenVal} \
+    --p-trim-left 15 \
+    --p-n-threads 4 \
+    --o-representative-sequences $EXPERIMENT_PATH/dada2_output/samples-run${run}-rep-seqs-pyro-trun${trunc_lenVal}.qza \
+    --o-table $EXPERIMENT_PATH/dada2_output/samples-run${run}-table-pyro-trun${trunc_lenVal}.qza \
+    --o-denoising-stats $EXPERIMENT_PATH/dada2_output/samples-run${run}-stats-dada2-pyro-trun${trunc_lenVal}.qza \
+    --verbose
+  
+    # trim-left will be always 15, since the sequencing was done with Ion Torrent and 16S Metagenomic Kit and the primers sequences are unknown, 
+    # so a general trim of 15pb is performed (as recommended in the Qiime2 forum discussion). 
+
+    #Visualizing Resulting data...
+    #Converting DADA2 artifact .qza to .qzv
+    # qiime feature-table summarize \
+    #   --i-table ${CURRENT_DIR}/dada2_output/run${runNums}-table-pyro.qza \
+    #   --o-visualization ${CURRENT_DIR}/dada2_output/run${runNums}-table-pyro.qzv \
+    #   --m-sample-metadata-file ${CURRENT_DIR}/samples-metadata-run${runNums}.tsv
+    qiime feature-table tabulate-seqs \
+      --i-data $EXPERIMENT_PATH/dada2_output/samples-run${run}-rep-seqs-pyro-trun${trunc_lenVal}.qza \
+      --o-visualization $EXPERIMENT_PATH/dada2_output/samples-run${run}-rep-seqs-pyro-trun${trunc_lenVal}.qzv
+    qiime metadata tabulate \
+      --m-input-file $EXPERIMENT_PATH/dada2_output/samples-run${run}-stats-dada2-pyro-trun${trunc_lenVal}.qza \
+      --o-visualization $EXPERIMENT_PATH/dada2_output/samples-run${run}-stats-dada2-pyro-trun${trunc_lenVal}.qzv
+done
+
+
+echo -e "\n${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each run run:${NC}"
+
+# Visualize statistic.qzv to know if the Dada2 parameters were the correct ones
+#for run in "${array_runs[@]}"; do
+for run in $(seq 1 $SEQUENCING_RUNS); do
+    qiime tools view $EXPERIMENT_PATH/dada2_output/samples-run${run}-stats-dada2-pyro-trun${trunc_lenVal}.qzv
+done
+
+echo -e "\n${ORANGE}Once you have vizualize all the statistic tables... ${LIGHTCYAN} Do you want to re-run dada2? (Write Yes or No)"
+read repeatDada2
+
+# Decide if Dada2 needs to be re-run
+if test ${repeatDada2} == "Yes"; then
+    echo -e "\n${PURPLE}Running DADA2 again..."
+    # For this version all the previous dada2 outputs need to be removed, later on this will be optimized!!
+    rm -r $EXPERIMENT_PATH/dada2_output
+    bash $DIR/src/IT_KitNoSplit_Dada2
+elif test ${repeatDada2} == "No"; then
+
+    echo -e "\n${PURPLE}DADA2 FOR ${Vregion} AMPLICON PERFORMED!"
+    # Add Dada2 parameters to config.env
+    {
+    echo "######### DADA2 ANALYSIS: #########"
+    echo "# Since cutadapt has been used for primer removal, no trimming is used"
+    echo "# trim-left will be always 15, since the sequencing was done with Ion Torrent and 16S Metagenomic Kit and the primers sequences are unknown, so a general trim of 15pb is performed (as recommended in the Qiime2 forum discussion). "
+    echo "DADA2_TRUNC=15"
+    echo "DADA2_TRUNC=\"$trunc_lenVal\""
+    } >> config.env
+
+fi
+
+echo -e "\n${PURPLE}Continue to Taxonomic classification..."
+bash $DIR/src/IT_KitNoSplit_Dada2_merge

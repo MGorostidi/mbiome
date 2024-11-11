@@ -1,0 +1,73 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+EXPERIMENT_PATH=$PWD
+
+source ${EXPERIMENT_PATH}/config.env
+
+# Convert AMPLICONS to analyze into an array
+IFS=',' read -r -a amplicon_analysis_array <<< "$AMPLICONS_ANALYSIS"
+
+# Declare an array for taxonomy levels
+declare -A taxonomic_levels
+
+# Asignar niveles taxonómicos a sus números
+taxonomic_levels=(
+    [Kingdom]=1
+    [Phylum]=2
+    [Class]=3
+    [Order]=4
+    [Family]=5
+    [Genus]=6
+    [Species]=7
+)
+
+# count how many metadata columns are in samples-metadata:
+samples_metadata_file="${EXPERIMENT_PATH}/samples-metadata.tsv"
+#num_metadata_columns=$(awk -F',' '{print NF; exit}' "$samples_metadata_file")
+num_metadata_columns=$(awk -F'\t' '{print NF; exit}' "$samples_metadata_file")
+
+
+for amplicon_to_analyze in "${amplicon_analysis_array[@]}"; do
+
+    echo -e "\n${PURPLE}Performing abundance table analysis for amplicon $amplicon_to_analyze ...${NC}"
+    if [ "$amplicon_to_analyze" != "Sidle" ] && [ "$TAXA_ANALYSIS" != "sidle" ] ; then
+
+        #if taxonomy results have not been extracted yet: 
+        #if [ ! -d "${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99" ]; then
+        if [ ! -d "${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99" ] || [ -z "$(ls -A "${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99" 2>/dev/null)" ]; then
+ 
+            echo -e "${PURPLE}Extracting taxonomy abundance results for GG ref DB...${NC}"
+            mkdir -p ${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99
+            qiime tools export --input-path ${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-${amplicon_to_analyze}-gg99-vsearch.qzv --output-path ${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99
+        fi
+        #if [ ! -d "${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99" ]; then
+        if [ ! -d "${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99" ] || [ -z "$(ls -A "${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99" 2>/dev/null)" ]; then
+ 
+            echo -e "${PURPLE}Extracting taxonomy abundance results for SILVA ref DB...${NC}"
+            mkdir -p ${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99
+            qiime tools export --input-path ${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-${amplicon_to_analyze}-silva-138-99-vsearch.qzv --output-path ${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99
+        fi
+
+        abundance_table_gg=${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99/level-${taxonomic_levels[$TAX_LEVEL_ANALYSIS]}.csv
+        abundance_table_silva=${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99/level-${taxonomic_levels[$TAX_LEVEL_ANALYSIS]}.csv
+
+        echo -e "${PURPLE} Performing abundance analysis for GG ref DB...${NC}"
+        GG_PATH=${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis_abundance_results/${TAX_LEVEL_ANALYSIS}_${GROUP_METADATA_COLUMN}_GG
+        mkdir -p $GG_PATH
+        python3 $DIR/src/abundance_analysis.py $GG_PATH $abundance_table_gg $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
+
+        echo -e "${PURPLE} Performing abundance analysis for SILVA ref DB...${NC}"
+        SILVA_PATH=${EXPERIMENT_PATH}/cutprimers_qiime2/${amplicon_to_analyze}/taxonomic_analysis_abundance_results/${TAX_LEVEL_ANALYSIS}_${GROUP_METADATA_COLUMN}_SILVA
+        mkdir -p $SILVA_PATH
+        python3 $DIR/src/abundance_analysis.py $SILVA_PATH $abundance_table_silva $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
+
+    else
+        echo -e "${LIGHTCYAN}Sidle todavía no está jeje"
+    fi
+
+done
+
+
+# EL NUMERO DE METDATA CCOLUMNS PUEDO SACARLO CON LAS NUM DE COLUMNS DE METADATA.TSV!!!

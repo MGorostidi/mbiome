@@ -2,23 +2,27 @@
 
 source ../../initialize_parameters.sh
 
-CURRENT_DIR=$PWD
+EXPERIMENT_PATH=$PWD
 
 SCRIPTS_PATH=$DIR/src
 
-echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
-        read runNums
+# echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+#         read runNums
 
-array_runs=($(echo $runNums | tr "," "\n"))
+# array_runs=($(echo $runNums | tr "," "\n"))
 
+source ${EXPERIMENT_PATH}/config.env
+
+#mkdir -p ${EXPERIMENT_PATH}/data
 # # Splitting each fastq file into different hypervariable regions:
-for run in "${array_runs[@]}"; do
+#for run in "${array_runs[@]}"; do
+for run in $(seq 1 $SEQUENCING_RUNS); do
 
     echo -e "${PURPLE}Splitting fastq files from run $run into different V regions...${NC}"
 
     MANIFEST_FILE=samples-manifest-run${run}.tsv
 
-    python3 prepare_fastqfiles_bymanifest.py $EXPERIMENT_PATH/$MANIFEST_FILE $run $EXPERIMENT_PATH/data
+    python3 ${SCRIPTS_PATH}/prepare_fastqfiles_bymanifest.py ${EXPERIMENT_PATH}/${MANIFEST_FILE} $run ${EXPERIMENT_PATH}/data
 
     # 1) Convert fastq.gz to fastq so MetagenopicsPP can be used:
     for file in $EXPERIMENT_PATH/data/data_run${run}/*.fastq.gz; do gzip -d "$file"; done
@@ -37,6 +41,8 @@ for run in "${array_runs[@]}"; do
     # 5) Remove non necessary folders: 
     rm -r $EXPERIMENT_PATH/cutprimers_output_manifest_run${run}
 done
+
+echo -e "\n${PURPLE}READS REORGANIZED BY VREGION!"
 
 # Remove non necessary folders: 
 rm -r $EXPERIMENT_PATH/data

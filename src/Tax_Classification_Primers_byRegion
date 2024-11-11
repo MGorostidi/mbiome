@@ -4,13 +4,17 @@ source ../../initialize_parameters.sh
 
 EXPERIMENT_PATH=$PWD
 
-echo -e "${LIGHTCYAN}Please, enter again the amplicon name(s) used (ex: V3 / amp1 / V3,V4)"
-read ampliconNames
-array_amplicons=($(echo $ampliconNames | tr "," "\n"))
+# echo -e "${LIGHTCYAN}Please, enter again the amplicon name(s) used (ex: V3 / amp1 / V3,V4)"
+# read ampliconNames
+# array_amplicons=($(echo $ampliconNames | tr "," "\n"))
 
+source ${EXPERIMENT_PATH}/config.env
 
-for amplicon in "${array_amplicons[@]}"; do
-    #for amplicon in "${array_regions[@]}"; do
+# Convert REGIONS into an array
+IFS=',' read -r -a amplicon_array <<< "$AMPLICONS"
+
+#for amplicon in "${array_amplicons[@]}"; do
+for amplicon in "${amplicon_array[@]}"; do
     DADA2_PATH=$EXPERIMENT_PATH/${amplicon}/dada2_output
     # Merge table.qza files:
     input_files_table=()
@@ -25,55 +29,110 @@ for amplicon in "${array_amplicons[@]}"; do
         # Save sequencing type:
         if [[ $file =~ ([^-]+)-trun[0-9]+\.qza$ ]]; then
             seq_type="${BASH_REMATCH[1]}"
-            echo "Detected type: $seq_type"
         fi
 
     done
 
     first_trunc_length="${trunc_lengths[0]}"
     
-    echo -e "${PURPLE}Running Taxonomic classification with GreenGenesDB vsearch classifier for amplicon $amplicon..${NC} "
     mkdir $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis
-    ### Greengenes
-    qiime feature-classifier classify-consensus-vsearch \
-        --i-query $DADA2_PATH/merged-${amplicon}-rep-seqs-${seq_type}-trun${first_trunc_length}.qza  \
-        --i-reference-reads $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/99_otus_refs.qza \
-        --i-reference-taxonomy $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/99_otu_taxonomy.qza \
-        --p-strand 'both' \
-        --p-threads 4 \
-        --o-classification $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qza \
-        --o-search-results $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-search-results-gg99-vsearch-dada2trun${first_trunc_length}.qza
-
-    qiime metadata tabulate \
-        --m-input-file $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qza \
-        --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qzv
     
-    qiime taxa barplot \
-        --i-table $DADA2_PATH/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza \
-        --i-taxonomy $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qza \
-        --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
-        --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/taxaBarplot-${amplicon}-gg99-vsearch.qzv
+    if test ${ANALYSIS_TYPE} == "16S"; then
+        echo -e "\n${PURPLE}Running Taxonomic classification with GreenGenesDB vsearch classifier for amplicon $amplicon..${NC} "
+        ### Greengenes
+        qiime feature-classifier classify-consensus-vsearch \
+            --i-query $DADA2_PATH/merged-${amplicon}-rep-seqs-${seq_type}-trun${first_trunc_length}.qza  \
+            --i-reference-reads $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/99_otus_refs.qza \
+            --i-reference-taxonomy $DIR/DATABASES/GreenGenes_DB/gg_13_8_otus/99_otu_taxonomy.qza \
+            --p-strand 'both' \
+            --p-threads 4 \
+            --o-classification $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qza \
+            --o-search-results $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-search-results-gg99-vsearch-dada2trun${first_trunc_length}.qza
 
-    echo -e "${PURPLE}Running Taxonomic classification with SILVA DB vsearch classifier..${NC} "
-    ### SILVA
-    qiime feature-classifier classify-consensus-vsearch \
-        --i-query $DADA2_PATH/merged-${amplicon}-rep-seqs-${seq_type}-trun${first_trunc_length}.qza  \
-        --i-reference-reads $DIR_DATABASES/Silva_DB/silva-138-99-seqs.qza \
-        --i-reference-taxonomy $DIR_DATABASES/Silva_DB/silva-138-99-tax.qza \
-        --p-strand 'both' \
-        --p-threads 4 \
-        --o-classification $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza \
-        --o-search-results $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-search-results-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza
+        qiime metadata tabulate \
+            --m-input-file $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qza \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qzv
+        
+        qiime taxa barplot \
+            --i-table $DADA2_PATH/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza \
+            --i-taxonomy $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-gg99-vsearch-dada2trun${first_trunc_length}.qza \
+            --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/taxaBarplot-${amplicon}-gg99-vsearch.qzv
 
-    qiime metadata tabulate \
-        --m-input-file $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza \
-        --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qzv
-    
-    qiime taxa barplot \
-        --i-table $DADA2_PATH/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza \
-        --i-taxonomy $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza \
-        --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
-        --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/taxaBarplot-${amplicon}-silva-138-99-vsearch.qzv
+        echo -e "\n${PURPLE}Running Taxonomic classification with SILVA DB vsearch classifier for amplicon $amplicon..${NC} "
+        ### SILVA
+        qiime feature-classifier classify-consensus-vsearch \
+            --i-query $DADA2_PATH/merged-${amplicon}-rep-seqs-${seq_type}-trun${first_trunc_length}.qza  \
+            --i-reference-reads $DIR_DATABASES/Silva_DB/silva-138-99-seqs.qza \
+            --i-reference-taxonomy $DIR_DATABASES/Silva_DB/silva-138-99-tax.qza \
+            --p-strand 'both' \
+            --p-threads 4 \
+            --o-classification $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza \
+            --o-search-results $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-search-results-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza
+
+        qiime metadata tabulate \
+            --m-input-file $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qzv
+        
+        qiime taxa barplot \
+            --i-table $DADA2_PATH/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza \
+            --i-taxonomy $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-silva-138-99-vsearch-dada2trun${first_trunc_length}.qza \
+            --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/taxaBarplot-${amplicon}-silva-138-99-vsearch.qzv
+    elif test ${ANALYSIS_TYPE} == "ITS"; then
+         echo -e "\n${PURPLE}Running Taxonomic classification with UNITE DB vsearch classifier for amplicon $amplicon..${NC} "
+        ### UNITE
+        # VSEARCH
+        qiime feature-classifier classify-consensus-vsearch \
+            --i-query $DADA2_PATH/merged-${amplicon}-rep-seqs-${seq_type}-trun${first_trunc_length}.qza  \
+            --i-reference-reads $DIR/DATABASES/UNITE_DB/unite_dyn_refs.qza \
+            --i-reference-taxonomy $DIR/DATABASES/UNITE_DB/unite_dyn_taxa.qza \
+            --p-strand 'both' \
+            --p-threads 4 \
+            --o-classification $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-vsearch-dada2trun${first_trunc_length}.qza \
+            --o-search-results $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-search-results-unite-vsearch-dada2trun${first_trunc_length}.qza
+
+        qiime metadata tabulate \
+            --m-input-file $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-vsearch-dada2trun${first_trunc_length}.qza \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-vsearch-dada2trun${first_trunc_length}.qzv
+        
+        qiime taxa barplot \
+            --i-table $DADA2_PATH/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza \
+            --i-taxonomy $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-vsearch-dada2trun${first_trunc_length}.qza \
+            --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/taxaBarplot-${amplicon}-unite-vsearch.qzv
+        # BLAST
+
+        qiime feature-classifier classify-consensus-blast  \
+            --i-query $DADA2_PATH/merged-${amplicon}-rep-seqs-${seq_type}-trun${first_trunc_length}.qza  \
+            --i-reference-reads $DIR/DATABASES/UNITE_DB/unite_dyn_refs.qza \
+            --i-reference-taxonomy $DIR/DATABASES/UNITE_DB/unite_dyn_taxa.qza \
+            --p-strand 'both' \
+            --p-num-threads 4 \
+            --o-classification $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-blast-dada2trun${first_trunc_length}.qza \
+            --o-search-results $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-search-results-unite-blast-dada2trun${first_trunc_length}.qza
+
+        qiime metadata tabulate \
+            --m-input-file $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-blast-dada2trun${first_trunc_length}.qza \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-blast-dada2trun${first_trunc_length}.qzv
+        
+        qiime taxa barplot \
+            --i-table $DADA2_PATH/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza \
+            --i-taxonomy $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/${amplicon}-taxonomy-unite-blast-dada2trun${first_trunc_length}.qza \
+            --m-metadata-file $EXPERIMENT_PATH/samples-metadata.tsv \
+            --o-visualization $EXPERIMENT_PATH/${amplicon}/taxonomic_analysis/taxaBarplot-${amplicon}-unite-blast.qzv
+
+    # echo "Since the experiment analyzes ITS data, UNITE DataBase, is used for the Taxonomic classification step.
+    #     The classifier used is classify-consensus-vsearch, based on the Qiime2Forum reccomendation (in the IonTorrent data pipeline discussion). 
+    #     However, in another Qiime2Forum post, they suggest us to use classify-consensus-blast, since it performs a more local analysis. 
+    #     Therefore, in the taxonomic step both classifators are run. After that a comparison will be made.
+    #     Besides, when the sequencing is 'paired' or 'pyro' the --p-strand 'both' parameter is used, as recommended in the forum, 
+    #     so every read can be reoriented in the same direction for the taxonomic classification." >| ${EXPERIMENT_PATH}/${amplicon}/taxonomic_analysis/Taxonomic_${amplicon}_report.txt
+
+
+    fi
 done
 
 ### AÑADIR UN SUM DE TODAS LAS REGIONES????
+
+echo -e "\n${PURPLE}TAXONOMIC ANALYSIS BY REGION PERFORMED!"

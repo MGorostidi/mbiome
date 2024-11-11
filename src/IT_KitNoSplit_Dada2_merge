@@ -1,0 +1,66 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+EXPERIMENT_PATH=$PWD
+
+source ${EXPERIMENT_PATH}/config.env
+
+echo -e "\n${PURPLE}Merging dada2 outputs from different runs.. ${NC}"
+#for amplicon in "${array_regions[@]}"; do
+DADA2_PATH=$EXPERIMENT_PATH/dada2_output
+# Merge table.qza files:
+input_files_table=()
+trunc_lengths=()
+
+for file in "$DADA2_PATH"/*-table-*.qza; do
+    # Excluir los archivos que contienen la palabra "merged"
+    if [[ $file != *"merged"* ]]; then
+        # Añadir el archivo a la lista de input_files_table
+        input_files_table+=("--i-tables $file")
+        
+        # Guardar trunc_length si coincide con un número antes de .qza
+        if [[ $file =~ ([0-9]+)\.qza$ ]]; then
+            trunc_length="${BASH_REMATCH[1]}"
+            trunc_lengths+=("$trunc_length")
+        fi
+    fi
+done
+
+
+first_trunc_length="${trunc_lengths[0]}"
+
+# Create the merging qiime2 command line:
+merge_command="qiime feature-table merge ${input_files_table[@]} --o-merged-table $DADA2_PATH/merged-table-pyro-trun${first_trunc_length}.qza --p-overlap-method sum"
+
+# Run command line:
+eval $merge_command
+
+qiime metadata tabulate \
+    --m-input-file $DADA2_PATH/merged-table-pyro-trun${first_trunc_length}.qza \
+    --o-visualization $DADA2_PATH/merged-table-pyro-trun${first_trunc_length}.qzv
+
+
+# Find all the rep-seqs.qza files in the dada2-output folder
+input_files_repseq=()
+for file in "$DADA2_PATH"/*-rep-seqs-*.qza; do
+    # Excluir los archivos que contienen la palabra "merged"
+    if [[ $file != *"merged"* ]]; then
+        # Añadir el archivo a la lista de input_files_table
+        input_files_repseq+=("--i-data $file")
+    fi
+done
+
+# Create the merging qiime2 command line:
+merge_command_repseqs="qiime feature-table merge-seqs ${input_files_repseq[@]} --o-merged-data $DADA2_PATH/merged-rep-seqs-pyro-trun${first_trunc_length}.qza"
+
+# Run command line:
+eval $merge_command_repseqs
+
+qiime metadata tabulate \
+    --m-input-file $DADA2_PATH/merged-rep-seqs-pyro-trun${first_trunc_length}.qza \
+    --o-visualization $DADA2_PATH/merged-rep-seqs-pyro-trun${first_trunc_length}.qzv
+
+echo -e "\n${PURPLE}DADA2 OUTPUT MERGED COMPLETED!"
+#Perform taxonomic classification:
+bash $DIR/src/Tax_Classification

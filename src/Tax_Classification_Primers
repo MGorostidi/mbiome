@@ -2,21 +2,36 @@
 
 source ../../initialize_parameters.sh
 
-echo -e "${ORANGE} For the taxonomic classification you can both, perform a classification by Vregion against a reference database OR, perform SIDLE, that will make a reconstruction of all the Vregions. ${LIGHTCYAN}Please, choose between 'byregion', 'sidle' or 'both':"
-    read taxClassification
+EXPERIMENT_PATH=$PWD
+
+source ${EXPERIMENT_PATH}/config.env
+
+
+# echo -e "\n${ORANGE} For the taxonomic classification you can both, perform a classification by Vregion against a reference database OR, perform SIDLE, that will make a reconstruction of all the Vregions. ${LIGHTCYAN}Please, choose between 'byregion', 'sidle' or 'both':"
+#     read taxClassification
 
 # Decide taxonomic classification
-if test ${taxClassification} == "byregion"; then
-    echo -e "${PURPLE}Continuing with by V region classification..."
+# if test ${ANALYSIS_TYPE} == "16S"; then
+if test ${TAXA_ANALYSIS} == "byregion"; then
+    echo -e "\n${PURPLE}Continuing with by V region classification..."
     bash $DIR/src/Tax_Classification_Primers_byRegion
 
-elif test ${taxClassification} == "sidle"; then
-    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+elif test ${TAXA_ANALYSIS} == "sidle"; then
+    echo -e "\n${PURPLE}Continuing with Sidle reconstruction..."
     bash $DIR/src/Tax_Classification_Primers_Sidle_Reconstruction
 
-elif test ${taxClassification} == "both"; then
-    echo -e "${PURPLE}Continuing with by V region classification..."
+elif test ${TAXA_ANALYSIS} == "both"; then
+    echo -e "\n${PURPLE}Continuing with by V region classification..."
     bash $DIR/src/Tax_Classification_Primers_byRegion
-    echo -e "${PURPLE}Continuing with Sidle reconstruction..."
+    echo -e "\n${PURPLE}Continuing with Sidle reconstruction..."
     bash $DIR/src/Tax_Classification_Primers_Sidle_Reconstruction
 fi
+
+
+# elif test ${ANALYSIS_TYPE} == "ITS"; then
+#     echo -e "\n${PURPLE}Continuing with UNITE classification..."
+#     bash $DIR/src/Tax_Classification_Primers_byRegion
+# fi
+
+# Perform Abundance table analysis
+bash $DIR/src/AbundanceTable_analysis

@@ -4,14 +4,20 @@ source ../../initialize_parameters.sh
 
 EXPERIMENT_PATH=$PWD
 
-echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
-read runNums
-echo -e "${LIGHTCYAN}Please, enter again the amplicon name(s) used (ex: V3 / amp1 / V3,V4)"
-read ampliconNames
-array_amplicons=($(echo $ampliconNames | tr "," "\n"))
+source ${EXPERIMENT_PATH}/config.env
 
-for amplicon in "${array_amplicons[@]}"; do
-    echo -e "${PURPLE}Merging dada2 outputs from different runs for ${amplicon} region.. ${NC}"
+# echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
+# read runNums
+# echo -e "${LIGHTCYAN}Please, enter again the amplicon name(s) used (ex: V3 / amp1 / V3,V4)"
+# read ampliconNames
+# array_amplicons=($(echo $ampliconNames | tr "," "\n"))
+
+# Convert AMPLICONS into an array
+IFS=',' read -r -a amplicon_array <<< "$AMPLICONS"
+
+# for amplicon in "${array_amplicons[@]}"; do
+for amplicon in "${amplicon_array[@]}"; do
+    echo -e "\n${PURPLE}Merging dada2 outputs from different runs for ${amplicon} region.. ${NC}"
     #for amplicon in "${array_regions[@]}"; do
     DADA2_PATH=$EXPERIMENT_PATH/${amplicon}/dada2_output
     # Merge table.qza files:
@@ -65,7 +71,10 @@ for amplicon in "${array_amplicons[@]}"; do
     qiime metadata tabulate \
         --m-input-file $DADA2_PATH/merged-${amplicon}-rep-seqs-pyro-trun${first_trunc_length}.qza \
         --o-visualization $DADA2_PATH/merged-${amplicon}-rep-seqs-pyro-trun${first_trunc_length}.qzv
+    
+    echo -e "\n${PURPLE}DADA2 OUTPUT MERGED FOR ${amplicon} AMPLICON!"
 done
 
+echo -e "\n${PURPLE}DADA2 OUTPUT MERGED COMPLETED!"
 #Perform taxonomic classification:
 bash $DIR/src/Tax_Classification_Primers

@@ -7,14 +7,16 @@ EXPERIMENT_PATH=$PWD
 
 echo -e "${ORANGE}Please, ensure that Sidle has already been installed (steps are described in Readme)"
 
-echo -e "${ORANGE}Sidle requires time and resources, therefore, it will only be performed for the reference database of your choice.${LIGHTCYAN}Please, write SILVA or GG (if you are not sure, we recommend SILVA):"
-read refDB
+# echo -e "${ORANGE}Sidle requires time and resources, therefore, it will only be performed for the reference database of your choice.${LIGHTCYAN}Please, write SILVA or GG (if you are not sure, we recommend SILVA):"
+# read refDB
+
+source ${EXPERIMENT_PATH}/config.env
 
 # Following the tutorial in: # Tutorial: https://q2-sidle.readthedocs.io/en/latest/database_preparation.html
 # From the Tutoria above: The authors of SMURF [1] recommend filtering the database to remove sequences with more than 3 degenerate nucleotides.
 # Chek if the database is aready filtered:
 
-if test ${refDB} == "SILVA"; then
+if test ${SIDLE_REF_DB} == "SILVA"; then
 
     if [ ! -f "$DIR_DATABASES/Silva_DB/silva-138-99-seqs-sidle-filt.qza" ]; then
         echo -e "${PURPLE}SILVA DB has not been filtered yet, filtering DB to remove sequences with more than 3 degenerate nucleotides. ..."
@@ -31,7 +33,7 @@ if test ${refDB} == "SILVA"; then
     DB='silva' 
     DB_FULL=silva-138-99-tax.qza
 
-elif test ${refDB} == "GG"; then
+elif test ${SIDLE_REF_DB} == "GG"; then
     if [ ! -f "$DIR_DATABASES/GreenGenes_DB/99_otus_refs-sidle-filt.qza" ]; then
         echo -e "${PURPLE}GG DB has not been filtered yet, filtering DB to remove sequences with more than 3 degenerate nucleotides. ..."
         qiime rescript cull-seqs \
@@ -76,9 +78,11 @@ primersVregion[V9_rev]=GCGTCGTAGTCCGGATTGG
 mkdir -p $EXPERIMENT_PATH/sidle/databases
 mkdir -p $EXPERIMENT_PATH/sidle/alignments
 
-my_regions=$V_REGIONS
-array_regions=($(echo $my_regions | tr "," "\n"))
+# my_regions=$V_REGIONS
+# array_regions=($(echo $my_regions | tr "," "\n"))
 
+# Convert REGIONS into an array
+IFS=',' read -r -a regions_array <<< "$V_REGIONS"
 
 region_alignment_files=()
 p_regions=()
@@ -87,7 +91,7 @@ region_kmer_files=()
 reconstruct_db_command="qiime sidle reconstruct-database"
 reconstruct_counts_command="qiime sidle reconstruct-counts"
 
-for Vregion in "${array_regions[@]}"; do
+for Vregion in "${regions_array[@]}"; do
     echo -e "${PURPLE}Extracting reads for V region $Vregion to Qiime2..."
 
     qiime feature-classifier extract-reads \

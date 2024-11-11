@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ../initialize_parameters.sh
+source ../../initialize_parameters.sh
 
 EXPERIMENT_DIR=$PWD
 #EXPERIMENT_DIR=/home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16S
@@ -25,38 +25,104 @@ read controlGroup
 echo -e "${ORANGE} It is necessary to decide if we want the focus of the differential analysis to be input (and may be output as well) or just output. ${LIGHTCYAN} Write down 'False' for the first option and 'True' for just output:"
 read inputInterest
 
-
 echo -e "${ORANGE} Since different approaches are integrated in Mbiome workflow, it is neccessary to explicitly write down in which table you want to perform the Metnet functional analysis.  
-${LIGHTCYAN} Write down the whole path to the dada2 table output (Ex: /home/mbiome/EXPERIMENTS/Experiment1/V3/dada2_output/merged-V3-table-pyro-trun140.qza):"
-read asv_table
+${LIGHTCYAN} Write if you want to perform Metnet in a Sidle reconstructed file or by region. (Write: Sidle or Region)"
+read workflowType
 
-echo -e "${LIGHTCYAN} And now, its taxonomic classification taxa.qza (Ex: /home/mbiome/EXPERIMENTS/Experiment1/V3/taxonomic_analysis/V3-taxonomy-gg99-vsearch-dada2trun140.qza):"
-read taxa_table
+if test ${workflowType} == "Sidle"; then 
+	initial_asv_table=${EXPERIMENT_DIR}/sidle/reconstruction/league_table.qza
+	echo -e "${PURPLE} Modifying sampleIDs.. ${NC}"
+	qiime tools export --input-path $initial_asv_table --output-path ${EXPERIMENT_DIR}/sidle/reconstruction/exported_table
+	biom convert -i ${EXPERIMENT_DIR}/sidle/reconstruction/exported_table/feature-table.biom -o ${EXPERIMENT_DIR}/sidle/reconstruction/exported_table/feature-table.tsv --to-tsv
+	sed -i '2s/[_-]//g' ${EXPERIMENT_DIR}/sidle/reconstruction/exported_table/feature-table.tsv
+	biom convert -i ${EXPERIMENT_DIR}/sidle/reconstruction/exported_table/feature-table.tsv -o ${EXPERIMENT_DIR}/sidle/reconstruction/exported_table/modified-feature-table.biom --table-type="OTU table" --to-hdf5
+	qiime tools import --input-path ${EXPERIMENT_DIR}/sidle/reconstruction/exported_table/modified-feature-table.biom --type 'FeatureTable[Frequency]' --input-format BIOMV210Format --output-path ${EXPERIMENT_DIR}/sidle/reconstruction/modified_league_table.qza
 
-file_name=$(echo "$taxa_table" | sed 's:.*/\([^/]*\)\.qza:\1:')
+	asv_table=${EXPERIMENT_DIR}/sidle/reconstruction/modified_league_table.qza
+	taxa_table=${EXPERIMENT_DIR}/sidle/reconstruction/league_taxonomy.qza
 
+elif test ${workflowType} == "Region"; then 
+
+	echo -e "${ORANGE} Now indicate the kind of analysis that has been performed: ${LIGHTCYAN} Write: Cutadapt or Cutprimers (the one of Metagenomic Plugin by Thermofisher)"
+	read analysisType
+	echo -e "${ORANGE} And the name of the V region or Amplicon that you want to analyze ${LIGHTCYAN} Ex: V3 or amp1"
+	read region
+	echo -e "${ORANGE} And the reference database used: ${LIGHTCYAN} Ex: GG or Silva"
+	read db
+
+	if test ${db} == "GG"; then
+		db_name="gg"
+	elif test ${db} == "Silva"; then
+		db_name="silva"
+	fi
+
+	if test ${analysisType} == "Cutadapt"; then 
+		asv_table=$(find ${EXPERIMENT_DIR}/${region}/dada2_output/ -type f -name "merged-${region}-table*.qza")
+		taxa_table=$(find ${EXPERIMENT_DIR}/${region}/taxonomic_analysis/ -type f -name "${region}-taxonomy-${db_name}*.qza")
+		#asv_table=${EXPERIMENT_DIR}/${region}/dada2_output/modified_league_table.qza
+		#taxa_table=${EXPERIMENT_DIR}/sidle/reconstruction/league_taxonomy.qza
+		#file_name=$(echo "${taxa_table}" | sed 's:.*/\([^/]*\)\.qza:\1:')
+	elif test ${analysisType} == "Cutprimers"; then
+		asv_table=$(find ${EXPERIMENT_DIR}/cutprimers_qiime2/${region}/dada2_output/ -type f -name "merged-${region}-table*.qza")
+		taxa_table=$(find ${EXPERIMENT_DIR}/cutprimers_qiime2/${region}/taxonomic_analysis/ -type f -name "${region}-taxonomy-${db_name}*.qza")
+	fi
+fi
+
+
+
+# echo -e "${ORANGE} Since different approaches are integrated in Mbiome workflow, it is neccessary to explicitly write down in which table you want to perform the Metnet functional analysis.  
+# ${LIGHTCYAN} Write down the whole path to the dada2 table output (Ex: /home/mbiome/EXPERIMENTS/Experiment1/V3/dada2_output/merged-V3-table-pyro-trun140.qza):"
+# read asv_table
+
+# echo -e "${LIGHTCYAN} And now, its taxonomic classification taxa.qza (Ex: /home/mbiome/EXPERIMENTS/Experiment1/V3/taxonomic_analysis/V3-taxonomy-gg99-vsearch-dada2trun140.qza):"
+# read taxa_table
+
+# qiime tools export --input-path /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/league_table.qza --output-path /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/exported_table
+# biom convert -i /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/exported_table/feature-table.biom -o /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/exported_table/feature-table.tsv --to-tsv
+# sed -i '2s/_/-/g' /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/exported_table/feature-table.tsv
+# biom convert -i /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/exported_table/feature-table.tsv -o /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/exported_table/modified-feature-table.biom --table-type="OTU table" --to-hdf5
+# qiime tools import --input-path /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/exported_table/modified-feature-table.biom --type 'FeatureTable[Frequency]' --input-format BIOMV210Format --output-path /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/sidle/reconstruction/modified_league_table.qza
+
+file_name=$(echo "${taxa_table}" | sed 's:.*/\([^/]*\)\.qza:\1:')
+
+echo -e "${PURPLE} Metnet running: generating features.. ${NC}"
 mkdir -p ${EXPERIMENT_DIR}/Metnet_${file_name}
 #Generate the normalized scores tables
 qiime metnet generateFeatures \
-	--i-frequency $asv_table \
-	--i-taxa $taxa_table \
+	--i-frequency ${asv_table} \
+	--i-taxa ${taxa_table} \
 	--p-selection  ${pipelineSelection} \
 	--p-level ${taxLevel} \
 	--o-reactions ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
 	--o-subsystems ${EXPERIMENT_DIR}/Metnet_${file_name}/subs_scores.qza \
 	--o-xmatrix ${EXPERIMENT_DIR}/Metnet_${file_name}/Xmatrix.qza
 
+if test ${workflowType} == "Region"; then 
+	sed '3,$s/^\([^\t]*\)/\1_V2/' ${EXPERIMENT_DIR}/samples-metadata.tsv > ${EXPERIMENT_DIR}/samples-metadata-${region}.tsv
+	sample_metadata_file=${EXPERIMENT_DIR}/samples-metadata-${region}.tsv
+else
+	sample_metadata_file=${EXPERIMENT_DIR}/samples-metadata.tsv
+fi
+
+qiime tools export \
+    --input-path ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
+    --output-path ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_rxns_scores
+
+biom convert \
+    -i /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/Metnet_V2-taxonomy-gg97-vsearch-dada2trun180/exported_table_rxns_scores/feature-table.biom \
+    -o /home/unidad/Escritorio/MiriamGorostidi/aMICROBIOTA/mbiome/EXPERIMENTS/Prueba16SbyRegion/Metnet_V2-taxonomy-gg97-vsearch-dada2trun180/exported_table_rxns_scores.tsv --to-tsv
 
 #Calculate differential analysis scores for exchange reactions
 qiime metnet differentialExchanges \
 	--i-reactions ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \
-	--m-metadata-file ${EXPERIMENT_DIR}/samples-metadata.tsv \
+	--m-metadata-file ${sample_metadata_file} \
     --m-metadata-column $metadataCol \
     --p-condition-name $conditionGroup \
     --p-control-name $controlGroup \
     --p-selection-model ${pipelineSelection} \
     --p-input-interest True \
 	--o-differential-analysis ${EXPERIMENT_DIR}/Metnet_${file_name}/exchanges_rxns_differential.qza
+
 qiime tools export \
     --input-path ${EXPERIMENT_DIR}/Metnet_${file_name}/exchanges_rxns_differential.qza \
     --output-path ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_exch_rxns
@@ -64,6 +130,7 @@ biom convert \
     -i ${EXPERIMENT_DIR}/Metnet_${file_name}/exported_table_exch_rxns/feature-table.biom \
     -o ${EXPERIMENT_DIR}/Metnet_${file_name}/table_exch_rxns.tsv --to-tsv
 
+echo "PARECE QUE BNIEN"
 #Calculate differential analysis scores for any kind of reactions
 qiime metnet differentialReactions \
 	--i-reactions ${EXPERIMENT_DIR}/Metnet_${file_name}/rxns_scores.qza \

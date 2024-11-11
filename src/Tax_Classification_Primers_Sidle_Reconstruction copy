@@ -159,6 +159,13 @@ qiime metadata tabulate \
  --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qzv
 
 
+# # UNITE needed to filter table, since some samples had fewer than 1.000 total sequences.. 
+# $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza
+# qiime feature-table filter-samples \
+#   --i-table <input-feature-table> \
+#   --p-min-frequency 1000 \
+#   --o-filtered-table <output-filtered-table>
+
 # Finish reconstruct_counts_command
 reconstruct_counts_command+=" --i-database-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza --i-database-summary $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza --p-n-workers 4 --o-reconstructed-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza"
 

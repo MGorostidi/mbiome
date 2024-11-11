@@ -1,0 +1,99 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+EXPERIMENT_PATH=$PWD
+
+source ${EXPERIMENT_PATH}/config.env
+
+# Convert AMPLICONS to analyze into an array
+IFS=',' read -r -a amplicon_analysis_array <<< "$AMPLICONS_ANALYSIS"
+
+# Declare an array for taxonomy levels
+declare -A taxonomic_levels
+
+# Asignar niveles taxonómicos a sus números
+taxonomic_levels=(
+    [Kingdom]=1
+    [Phylum]=2
+    [Class]=3
+    [Order]=4
+    [Family]=5
+    [Genus]=6
+    [Species]=7
+)
+
+# count how many metadata columns are in samples-metadata:
+samples_metadata_file="${EXPERIMENT_PATH}/samples-metadata.tsv"
+#num_metadata_columns=$(awk -F',' '{print NF; exit}' "$samples_metadata_file")
+num_metadata_columns=$(awk -F'\t' '{print NF; exit}' "$samples_metadata_file")
+
+
+for amplicon_to_analyze in "${amplicon_analysis_array[@]}"; do
+
+    echo -e "\n${PURPLE}Performing abundance table analysis for amplicon $amplicon_to_analyze ...${NC}"
+
+    if test ${ANALYSIS_TYPE} == "16S"; then
+        if [ "$amplicon_to_analyze" != "Sidle" ] && [ "$TAXA_ANALYSIS" != "sidle" ] ; then
+
+            #if taxonomy results have not been extracted yet: 
+            #if [ ! -d "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99" ]; then
+            if [ ! -d "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99" ] || [ -z "$(ls -A "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99" 2>/dev/null)" ]; then
+    
+                echo -e "${PURPLE}Extracting taxonomy abundance results for GG ref DB...${NC}"
+                mkdir -p ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99
+                qiime tools export --input-path ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-${amplicon_to_analyze}-gg99-vsearch.qzv --output-path ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99
+            fi
+            #if [ ! -d "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99" ]; then
+            if [ ! -d "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99" ] || [ -z "$(ls -A "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99" 2>/dev/null)" ]; then
+    
+                echo -e "${PURPLE}Extracting taxonomy abundance results for SILVA ref DB...${NC}"
+                mkdir -p ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99
+                qiime tools export --input-path ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-${amplicon_to_analyze}-silva-138-99-vsearch.qzv --output-path ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99
+            fi
+
+            echo -e "${PURPLE} Performing abundance analysis for GG ref DB...${NC}"
+            abundance_table_gg=${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-gg99/level-${taxonomic_levels[$TAX_LEVEL_ANALYSIS]}.csv
+            GG_PATH=${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis_abundance_results/${TAX_LEVEL_ANALYSIS}_${GROUP_METADATA_COLUMN}_GG
+            mkdir -p $GG_PATH
+            python3 $DIR/src/abundance_analysis.py $GG_PATH $abundance_table_gg $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
+
+            echo -e "${PURPLE} Performing abundance analysis for SILVA ref DB...${NC}"
+            abundance_table_silva=${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-silva-138-99/level-${taxonomic_levels[$TAX_LEVEL_ANALYSIS]}.csv
+            SILVA_PATH=${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis_abundance_results/${TAX_LEVEL_ANALYSIS}_${GROUP_METADATA_COLUMN}_SILVA
+            mkdir -p $SILVA_PATH
+            python3 $DIR/src/abundance_analysis.py $SILVA_PATH $abundance_table_silva $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
+
+        else
+            echo -e "${LIGHTCYAN}Sidle todavía no está jeje"
+            echo -e "${PURPLE} Performing abundance analysis of SIDLE results based on $SIDLE_REF_DB reference database...${NC}"
+            python3 $DIR/src/create_sidle_taxonomy_table.py ${EXPERIMENT_PATH}/sidle
+            
+            abundance_table_sidle=${EXPERIMENT_PATH}/sidle/sidle_abundance_table.csv
+            SIDLE_PATH=${EXPERIMENT_PATH}/sidle/${TAX_LEVEL_ANALYSIS}_${GROUP_METADATA_COLUMN}_${SIDLE_REF_DB}_SIDLE
+            mkdir -p $SIDLE_PATH 
+            python3 $DIR/src/abundance_analysis.py $SIDLE_PATH $abundance_table_sidle $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
+
+        fi
+
+    elif test ${ANALYSIS_TYPE} == "ITS"; then
+
+        if [ ! -d "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-unite" ] || [ -z "$(ls -A "${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-unite" 2>/dev/null)" ]; then
+
+            echo -e "${PURPLE}Extracting taxonomy abundance results for UNITE ref DB...${NC}"
+            mkdir -p ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-unite
+            qiime tools export --input-path ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-${amplicon_to_analyze}-unite-vsearch.qzv --output-path ${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-unite
+        fi
+
+        echo -e "${PURPLE} Performing abundance analysis for UNITE ref DB...${NC}"
+            abundance_table_unite=${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis/taxaBarplot-unite/level-${taxonomic_levels[$TAX_LEVEL_ANALYSIS]}.csv
+            UNITE_PATH=${EXPERIMENT_PATH}/${amplicon_to_analyze}/taxonomic_analysis_abundance_results/${TAX_LEVEL_ANALYSIS}_${GROUP_METADATA_COLUMN}_UNITE
+            mkdir -p $GG_UNITE_PATHPATH
+            python3 $DIR/src/abundance_analysis.py $GG_PATH $abundance_table_unite $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
+           
+    fi
+
+done
+
+
+# EL NUMERO DE METDATA CCOLUMNS PUEDO SACARLO CON LAS NUM DE COLUMNS DE METADATA.TSV!!!
