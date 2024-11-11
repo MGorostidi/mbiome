@@ -26,7 +26,15 @@ EXPERIMENTS/
 /EXPERIMENTS/
 /EXPERIMENTS/*
 
+EXPERIMENTS (copia)/
+/EXPERIMENTS (copia)/
+/EXPERIMENTS (copia)/*
+
 # Other folders:
+src/viejo/
+/src/viejo/
+/src/viejo/*
+
 q2-metnet/
 /q2-metnet/
 /q2-metnet/*
