@@ -14,7 +14,7 @@ conda install wget
 
 # Download .yml file and create qiime2 environment:
 echo -e "${Purple} Downloading Qiime2 and creating conda environment... ${White}"
-conda env create -n qiime2-amplicon-2024.5 --file https://data.qiime2.org/distro/amplicon/qiime2-amplicon-2024.5-py39-linux-conda.yml
+conda env create -n qiime2-amplicon-2024.2 --file https://data.qiime2.org/distro/amplicon/qiime2-amplicon-2024.2-py39-linux-conda.yml
 
 # Download Metagenomics PP plugin by Thermofisher: (already available when cloning Mbiome repository)
 # From https://apps.thermofisher.com/apps/spa/#/publiclib/plugins , after loggin in in the Thermofisher account.
@@ -28,7 +28,7 @@ conda env create -n qiime2-amplicon-2024.5 --file https://data.qiime2.org/distro
 # Downloading and Installing Sidle for reconstruction: 
 # Tutorial: https://q2-sidle.readthedocs.io/en/latest/database_preparation.html
 echo -e "${Purple} Downloading and Installing Sidle for reconstruction... ${White}"
-conda activate qiime2-amplicon-2024.5
+conda activate qiime2-amplicon-2024.2
 conda install dask
 conda install -c conda-forge -c bioconda -c qiime2 -c defaults xmltodict
 # pip install git+https://github.com/bokulich-lab/RESCRIPt.git # IF RESCRIPT IS NOT INSTALLED IN YOUR QIIME2 ENVIRONMENT (Last versions normally include it)
@@ -36,7 +36,7 @@ pip install git+https://github.com/jwdebelius/q2-sidle
 qiime dev refresh-cache
 
 # Taxonomic analysis:
-conda activate qiime2-amplicon-2024.5
+conda activate qiime2-amplicon-2024.2
 pip install adjustText
 
 
@@ -48,7 +48,7 @@ conda create -n picrust2 -c bioconda -c conda-forge picrust2=2.3.0_b
 # Install Metnet for functional analysis:
 echo -e "${Purple} Install Metnet for functional analysis... ${White}"
 #From tutorial: https://github.com/PlanesLab/q2-metnet
-conda activate qiime2-amplicon-2024.5
+conda activate qiime2-amplicon-2024.2
 git clone https://github.com/PlanesLab/q2-metnet.git
 cd q2-metnet/q2_metnet/
 unzip data.zip

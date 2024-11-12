@@ -29,8 +29,7 @@ conda_dir=$(which conda)
 conda_dir=${conda_dir//\/bin\/conda}
 DIR_CONDA=${conda_dir}/etc/profile.d/conda.sh
 
-#QIIME2_ENV_NAME=qiime2-amplicon-2024.2
-QIIME2_ENV_NAME=qiime2-amplicon-2024.5
+QIIME2_ENV_NAME=qiime2-amplicon-2024.2
 
 if [ ! -d "$DIR/DATABASES" ]; then
     # Create folder if this one does not exist
