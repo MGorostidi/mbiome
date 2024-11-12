@@ -36,7 +36,7 @@ pip install git+https://github.com/jwdebelius/q2-sidle
 qiime dev refresh-cache
 
 # Taxonomic analysis:
-conda activate qiime2-amplicon-2024.2
+conda activate qiime2-amplicon-2024.5
 pip install adjustText
 
 
