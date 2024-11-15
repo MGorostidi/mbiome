@@ -78,13 +78,23 @@ for amplicon in "${amplicon_array[@]}"; do
     fwd_primer="${!fwd_primer_var}"
     rev_primer="${!rev_primer_var}"
 
-    
-    echo -e "${PURPLE}Extracting reads for $amplicon amplicon to Qiime2..."
-    qiime feature-classifier extract-reads \
-        --i-sequences $DIR_DATABASES/$DB_PATH/${DB_NAME}-sidle-filt.qza \
-        --p-f-primer ${fwd_primer} \
-        --p-r-primer ${rev_primer} \
-        --o-reads $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza
+    # Since the step need time and resources, if it is already executed, it won't be repeated:
+    if [ ! -f "$EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza" ]; then
+        # Command to run if file does NOT exist
+        echo -e "${PURPLE}Extracting reads for $amplicon amplicon to Qiime2..."
+        qiime feature-classifier extract-reads \
+            --i-sequences $DIR_DATABASES/$DB_PATH/${DB_NAME}-sidle-filt.qza \
+            --p-f-primer ${fwd_primer} \
+            --p-r-primer ${rev_primer} \
+            --o-reads $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza
+    fi
+
+    # echo -e "${PURPLE}Extracting reads for $amplicon amplicon to Qiime2..."
+    # qiime feature-classifier extract-reads \
+    #     --i-sequences $DIR_DATABASES/$DB_PATH/${DB_NAME}-sidle-filt.qza \
+    #     --p-f-primer ${fwd_primer} \
+    #     --p-r-primer ${rev_primer} \
+    #     --o-reads $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza
 
     # trim length needs to be the same used for dada2: 
     INPUT_PATH=$EXPERIMENT_PATH/${amplicon}/dada2_output
@@ -103,17 +113,19 @@ for amplicon in "${amplicon_array[@]}"; do
     done
     first_trunc_length="${trunc_lengths[0]}"
 
-    echo -e "${PURPLE}Preparing extracted region for $amplicon amplicon..."
-    qiime sidle prepare-extracted-region \
-        --i-sequences $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza \
-        --p-region ${amplicon} \
-        --p-fwd-primer ${fwd_primer} \
-        --p-rev-primer ${rev_primer} \
-        --p-trim-length ${first_trunc_length} \
-        --p-n-workers 4 \
-        --o-collapsed-kmers $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-kmers.qza \
-        --o-kmer-map $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-map.qza
-    
+    # Since the step need time and resources, if it is already executed, it won't be repeated:
+    if [ ! -f "$EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-map.qza" ]; then
+        echo -e "${PURPLE}Preparing extracted region for $amplicon amplicon..."
+        qiime sidle prepare-extracted-region \
+            --i-sequences $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}.qza \
+            --p-region ${amplicon} \
+            --p-fwd-primer ${fwd_primer} \
+            --p-rev-primer ${rev_primer} \
+            --p-trim-length ${first_trunc_length} \
+            --p-n-workers 4 \
+            --o-collapsed-kmers $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-kmers.qza \
+            --o-kmer-map $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-map.qza
+    fi
     
     echo -e "${PURPLE}Starting $amplicon region alignment..."
     qiime sidle align-regional-kmers \
@@ -123,6 +135,14 @@ for amplicon in "${amplicon_array[@]}"; do
         --p-max-mismatch 2 \
         --p-n-workers 4 \
         --o-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${amplicon}-alignment.qza
+    
+    echo "qiime sidle align-regional-kmers \
+        --i-kmers $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-kmers.qza \
+        --i-rep-seq $EXPERIMENT_PATH/${amplicon}/dada2_output/merged-${amplicon}-rep-seqs-${seq_type}-trun${first_trunc_length}.qza \
+        --p-region ${amplicon} \
+        --p-max-mismatch 2 \
+        --p-n-workers 4 \
+        --o-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${amplicon}-alignment.qza"
 
         #--p-chunk-size {params.chunk_size} \ ?¿?¿
 
@@ -133,13 +153,20 @@ for amplicon in "${amplicon_array[@]}"; do
 
     echo -e "${PURPLE}Amplicon $amplicon alignment finished!"
 
+        # Filtering samples: 
+    # Sidle gives error when samples have fewer than 1.000 total sequences.. 
+    qiime feature-table filter-samples \
+    --i-table $EXPERIMENT_PATH/${amplicon}/dada2_output/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza \
+    --p-min-frequency 1000 \
+    --o-filtered-table $EXPERIMENT_PATH/${amplicon}/dada2_output/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}-filtered1000seq.qza
+
     p_reg="--p-region ${amplicon}"
     reg_alignment="--i-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${amplicon}-alignment.qza"
     kmer_map_file="--i-kmer-map $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${amplicon}-${first_trunc_length}nt-map.qza"
 
     reconstruct_db_command+=" ${p_reg} ${reg_alignment} ${kmer_map_file}"
 
-    reg_table="--i-regional-table $EXPERIMENT_PATH/${amplicon}/dada2_output/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}.qza"
+    reg_table="--i-regional-table $EXPERIMENT_PATH/${amplicon}/dada2_output/merged-${amplicon}-table-${seq_type}-trun${first_trunc_length}-filtered1000seq.qza"
 
     reconstruct_counts_command+=" ${p_reg} ${reg_alignment} ${reg_table}"
 
