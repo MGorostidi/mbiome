@@ -4,238 +4,91 @@ source ../../initialize_parameters.sh
 
 EXPERIMENT_PATH=$PWD
 
-# echo -e "${LIGHTCYAN}Please, enter again the amplicon name(s) used (ex: V3 / amp1 / V3,V4)"
-# read ampliconNames
-# array_amplicons=($(echo $ampliconNames | tr "," "\n"))
-
 source ${EXPERIMENT_PATH}/config.env
 
 # Convert AMPLICONS into an array
 IFS=',' read -r -a amplicon_array <<< "$AMPLICONS"
 
-# visualize quality graph of each .qzv created in cutadapt
-#for amplicon in "${array_amplicons[@]}"; do
-for amplicon in "${amplicon_array[@]}"; do
-  echo -e "\n${PURPLE}Performing Dada2 for ${amplicon} amplicon..."
-  mkdir -p $EXPERIMENT_PATH/${amplicon}/dada2_output
+# Define a function to run DADA2 for each amplicon
+run_dada2_for_amplicon() {
+  local amplicon="$1"
+  
+  echo -e "\n${PURPLE}Performing DADA2 for ${amplicon} amplicon..."
+  mkdir -p "$EXPERIMENT_PATH/${amplicon}/dada2_output"
 
-  echo -e "\n${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples.qzv) and decide the length of reads, so we can trunc by quality. Remember that you must use the same trunc length for both senses (F/R) and every run by amplicon."
-  # Identifying all the files created for a specific amplicon, we can analyze all the runs for a specific region: 
-  for file in "$EXPERIMENT_PATH/cutadapt"/*-$amplicon-*.qzv; do
+  echo -e "\n${ORANGE}Before DADA2, visualize samples.qza (samples.qzv) to decide truncation lengths. Use the same trunc length for both forward and reverse reads across all runs for each amplicon.${NC}"
+  
+  # Open quality graphs for each file within the amplicon
+  for file in "$EXPERIMENT_PATH/cutadapt"/*-"$amplicon"-*.qzv; do
     file_name=$(echo "$file" | sed "s|${EXPERIMENT_PATH}/cutadapt/||; s|\.qzv$||")
-    echo -e "\n${PURPLE}Opening $file_name .. ${NC}"
-    qiime tools view $file
+    echo -e "\n${PURPLE}Opening $file_name...${NC}"
+    qiime tools view "$file"
   done
 
-  echo -e "\n${LIGHTCYAN} Enter truncating length for Forward sequences for Amplicon $amplicon. Remember that you must use the same trunc length for both senses (F/R) and every run by amplicon."
-  read trunc_forward_byAmplicon
-  echo -e "\n${LIGHTCYAN} Enter truncating length for Reverse sequences for Amplicon $amplicon. Remember that you must use the same trunc length for both senses (F/R) and every run by amplicon."
-  read trunc_reverse_byAmplicon
+  # Get truncation lengths from user
+  echo -e "\n${LIGHTCYAN}Enter truncating length for Forward sequences for Amplicon $amplicon:"
+  read -r trunc_forward_byAmplicon
+  echo -e "\n${LIGHTCYAN}Enter truncating length for Reverse sequences for Amplicon $amplicon:"
+  read -r trunc_reverse_byAmplicon
 
-  for file in "$EXPERIMENT_PATH/cutadapt"/*-$amplicon-*.qza; do
+  # Run DADA2 on each relevant file for this amplicon
+  for file in "$EXPERIMENT_PATH/cutadapt"/*-"$amplicon"-*.qza; do
     file_name=$(echo "$file" | sed "s|${EXPERIMENT_PATH}/cutadapt/||; s|\.qza$||")
-    echo -e "\n${PURPLE}Performing Dada2 denoise-paired for $file_name...${NC}"
-
+    echo -e "\n${PURPLE}Performing DADA2 denoise-paired for $file_name...${NC}"
+    
     qiime dada2 denoise-paired \
-      --i-demultiplexed-seqs $file \
-      --p-trunc-len-f ${trunc_forward_byAmplicon} \
-      --p-trunc-len-r ${trunc_reverse_byAmplicon} \
+      --i-demultiplexed-seqs "$file" \
+      --p-trunc-len-f "${trunc_forward_byAmplicon}" \
+      --p-trunc-len-r "${trunc_reverse_byAmplicon}" \
       --p-n-threads 4 \
-      --o-representative-sequences $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-rep-seqs-paired-trun${trunc_forward_byAmplicon}.qza \
-      --o-table $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-table-paired-trun${trunc_forward_byAmplicon}.qza \
-      --o-denoising-stats $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-paired-trun${trunc_forward_byAmplicon}.qza \
+      --o-representative-sequences "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-rep-seqs-paired-trun${trunc_forward_byAmplicon}.qza" \
+      --o-table "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-table-paired-trun${trunc_forward_byAmplicon}.qza" \
+      --o-denoising-stats "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-paired-trun${trunc_forward_byAmplicon}.qza" \
       --verbose
-      # Since the Cutadapt has been used for removing primers, no trimming will be used. 
 
-      #Visualizing Resulting data...
-      #Converting DADA2 artifact .qza to .qzv
-      # qiime feature-table summarize \
-      # --i-table $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-table-paired-trun${trunc_forward_byAmplicon}.qza \
-      # --o-visualization $EXPERIMENT_PATH/${amplicon}/dada2_output//${file_name}-table-paired-trun${trunc_forward_byAmplicon}.qzv \
-      # --m-sample-metadata-file ${EXPERIMENT_PATH}/samples-metadata-run${run}.tsv
-
-      # qiime feature-table tabulate-seqs \
-      # --i-data $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-rep-seqs-paired-trun${trunc_lenVal_byVregion}.qza \
-      # --o-visualization $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-rep-seqs-paired-trun${trunc_lenVal_byVregion}.qzv
-
+    # Visualize resulting metadata from DADA2
     qiime metadata tabulate \
-            --m-input-file $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-paired-trun${trunc_forward_byAmplicon}.qza \
-            --o-visualization $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-paired-trun${trunc_forward_byAmplicon}.qzv
+      --m-input-file "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-paired-trun${trunc_forward_byAmplicon}.qza" \
+      --o-visualization "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-paired-trun${trunc_forward_byAmplicon}.qzv"
   done
 
-  # # Create report with the parameters used:
-  # echo -e "${Purple} Creating summary report..."
-  # echo "This is a summary report of the parameters used in DADA2 step: 
-  #                       Truncating Length for Forward sequences: ${trunc_forward}
-  #                       Truncating Length for Reverse sequences: ${trunc_reverse}
-  #                       Trimming Length for Forward sequences: ${trim_forward}
-  #                       Trimming Length for Reverse sequences: ${trim_reverse}" >| ${CURRENT_DIR}/Dada2_output/DADA2_parameters_report.txt
-
-
-  echo -e "\n${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each run run:${NC}"
-
-  # Visualize statistic.qzv to know if the Dada2 parameters were the correct ones
-  for file in "$EXPERIMENT_PATH/${amplicon}/dada2_output/"/*-stats-dada2-*.qzv; do
-      file_name=$(echo "$file" | sed "s|${EXPERIMENT_PATH}/${amplicon}/dada2_output/||; s|\.qzv$||")
-      echo -e "\n${PURPLE}Visualizing $file_name...${NC}"
-      qiime tools view $file
+  # Review statistic tables and ask if re-run is needed
+  echo -e "\n${ORANGE}Check DADA2 statistics tables to assess if truncation length is adequate (70% pass rate is good). Opening stats tables...${NC}"
+  for file in "$EXPERIMENT_PATH/${amplicon}/dada2_output/"*-stats-dada2-*.qzv; do
+    file_name=$(echo "$file" | sed "s|${EXPERIMENT_PATH}/${amplicon}/dada2_output/||; s|\.qzv$||")
+    echo -e "\n${PURPLE}Opening $file_name...${NC}"
+    qiime tools view "$file"
   done
 
-  echo -e "\n${ORANGE}Once you have vizualize all the statistic tables... ${LIGHTCYAN} Do you want to re-run dada2 for amplicon ${amplicon}? (Write Yes or No)"
-  read repeatDada2
-  # Decide if Dada2 needs to be re-run
-  if test ${repeatDada2} == "Yes"; then
-      echo -e "\n${PURPLE}Running DADA2 again..."
-      # For this version all the previous dada2 outputs need to be removed, later on this will be optimized!!
-      rm -r $EXPERIMENT_PATH/${amplicon}/dada2_output
-      bash $DIR/src/IL_Primers_Dada2
+  # Ask if DADA2 should be re-run with different parameters
+  echo -e "\n${ORANGE}After viewing stats tables... ${LIGHTCYAN}Do you want to re-run DADA2 for amplicon ${amplicon}? (Yes or No)"
+  read -r repeatDada2
 
-  elif test ${repeatDada2} == "No"; then
-        echo -e "\n${PURPLE}DADA2 FOR ${amplicon} AMPLICON PERFORMED!"
-      # Add Dada2 parameters to config.env
-      {
-        echo "######### DADA2 ANALYSIS: #########"
-        echo "# Since cutadapt has been used for primer removal, no trimming is used"
-        echo "DADA2_TRUNC_${amplicon}=\"$trunc_lenVal_byAmplicon\""
-      } >> config.env
-
-      # echo -e "${PURPLE}Continue to Taxonomic classification..."
-      # echo -e "${PURPLE}Merging dada2 outputs from different runs..."
-      # bash $DIR/src/IL_Primers_Dada2_merge
+  if [[ "$repeatDada2" == "Yes" ]]; then
+    echo -e "\n${PURPLE}Re-running DADA2 for ${amplicon}..."
+    rm -r "$EXPERIMENT_PATH/${amplicon}/dada2_output"
+    run_dada2_for_amplicon "$amplicon"  # Recursive call for re-run
+  elif [[ "$repeatDada2" == "No" ]]; then
+    echo -e "\n${PURPLE}DADA2 FOR ${amplicon} AMPLICON COMPLETED!"
+    # Log DADA2 parameters to config.env
+    {
+      echo "######### DADA2 ANALYSIS: #########"
+      echo "# No trimming due to primer removal with cutadapt"
+      echo "DADA2_TRUNC_${amplicon}_FORWARD=\"$trunc_forward_byAmplicon\""
+      echo "DADA2_TRUNC_${amplicon}_REVERSE=\"$trunc_reverse_byAmplicon\""
+    } >> config.env
   fi
+}
+
+# Loop through each amplicon and process with DADA2
+for amplicon in "${amplicon_array[@]}"; do
+  run_dada2_for_amplicon "$amplicon"
 done
+
 
 echo -e "\n${PURPLE}DADA2 COMPLETED!"
 echo -e "\n${PURPLE}Continue to Taxonomic classification..."
 bash $DIR/src/IL_Primers_Dada2_merge
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# #We store current path:
-# CURRENT_DIR=$PWD
-
-# #Ask for run ID numbers
-# echo -e "${LIGHTCYAN}Now please, enter the numbers of run sequencings (ex: 1,2,3):"
-#         read runNums
-
-# #Convert seq numbers to vector
-# my_string=$runNums
-# my_array=($(echo $my_string | tr "," "\n"))
-
-# # Visualize the quality graphs for decide the DADA2 parameters. 
-# echo -e "${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples-demux.qzv) and decide the length of reads, so we can trunc by quality. 
-# When we work with more than one run, we need to decide the truncating length based on all the .qzv samples created. 
-# Take a look to all the graphs (one for each run) that have been opened up. (You will need to quit the viewer, pressing 'q', for the next file to open)"
-
-# echo -e "$ORANGE If you have previously decided to perform CUTADAPT because you knew the exact primer sequences,
-#  now you should choose a 0 (zero) in the trimming parameters. If not, you should select a trimming length that 
-#  removes the lower quality base pairs from the left of the quality graph."
-
-# # Visualize Quality graphs
-# for runNums in "${my_array[@]}"
-# do
-#     qiime tools view ${CURRENT_DIR}/samples-run${runNums}-demux.qzv
-# done
-
-
-# # Ask for truncating and trimming parameters:
-# echo -e "${LIGHTCYAN} Enter truncating length for Forward sequences"
-# read trunc_forward
-# echo -e "${LIGHTCYAN} Enter truncating length for Reverse sequences"
-# read trunc_reverse
-# echo -e "${LIGHTCYAN} Enter trimming length for Forward sequences"
-# read trim_forward
-# echo -e "${LIGHTCYAN} Enter trimming length for Reverse sequences"
-# read trim_reverse
-
-
-# mkdir $CURRENT_DIR/Dada2_output
-
-# for runNums in "${my_array[@]}"; do
-#   # Dada2 step
-#   echo -e "$PURPLE Running Dada2 step for run $runNums ..."
-#   qiime dada2 denoise-paired \
-#     --i-demultiplexed-seqs ${CURRENT_DIR}/samples-run${runNums}.qza \
-#     --p-trunc-len-f ${trunc_forward} \
-#     --p-trunc-len-r ${trunc_reverse} \
-#     --p-trim-left-f ${trim_forward} \
-#     --p-trim-left-r ${trim_reverse} \
-#     --p-n-threads 4 \
-#     --o-representative-sequences ${CURRENT_DIR}/Dada2_output/run${runNums}-rep-seqs-paired.qza \
-#     --o-table ${CURRENT_DIR}/Dada2_output/run${runNums}-table-paired.qza \
-#     --o-denoising-stats ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-paired.qza \
-#     --verbose
-
-
-#   #Visualizing Resulting data...
-#   #Converting DADA2 artifact .qza to .qzv
-#   qiime feature-table summarize \
-#     --i-table ${CURRENT_DIR}/Dada2_output/run${runNums}-table-paired.qza \
-#     --o-visualization ${CURRENT_DIR}/Dada2_output/run${runNums}-table-paired.qzv \
-#     --m-sample-metadata-file ${CURRENT_DIR}/samples-metadata-run${runNums}.tsv
-#   qiime feature-table tabulate-seqs \
-#     --i-data ${CURRENT_DIR}/Dada2_output/run${runNums}-rep-seqs-paired.qza \
-#     --o-visualization ${CURRENT_DIR}/Dada2_output/run${runNums}-rep-seqs-paired.qzv
-#   qiime metadata tabulate \
-#     --m-input-file ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-paired.qza \
-#     --o-visualization ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-paired.qzv
-
-# done
-
-
-# # Create report with the parameters used:
-# echo -e "${Purple} Creating summary report..."
-# echo "This is a summary report of the parameters used in DADA2 step: 
-#                         Truncating Length for Forward sequences: ${trunc_forward}
-#                         Truncating Length for Reverse sequences: ${trunc_reverse}
-#                         Trimming Length for Forward sequences: ${trim_forward}
-#                         Trimming Length for Reverse sequences: ${trim_reverse}" >| ${CURRENT_DIR}/Dada2_output/DADA2_parameters_report.txt
-
-
-
-# echo -e "${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each seq run:${NC}"
-# # Visualize statistic.qzv to know if the Dada2 parameters were the correct ones
-# for runNums in "${my_array[@]}"; do
-#     qiime tools view ${CURRENT_DIR}/Dada2_output/run${runNums}-stats-dada2-paired.qzv
-# done
-
-# echo "\n"
-# echo -e "${ORANGE}Once you have vizualize all the statistic tables... ${LIGHTCYAN} Do you want to re-run dada2? (Write Yes or No)"
-# read repeatDada2
-
-# # Decide if Dada2 needs to be re-run
-# if test ${repeatDada2} == "Yes"; then 
-#     echo -e "${PURPLE}Running DADA2 again..."
-#     bash $DIR/src/IL_Primers_Dada2_different_seqRuns
-# elif test ${repeatDada2} == "No"; then
-#     echo -e "${ORANGE}Now we have run DADA2, we will have 3 files for each run. In order to continue with the taxonomic analysis, we need to merge table and rep-seqs files."
-#     echo "Please, edit manually the 'mergeEdit' file that you will find in ../src folder.${LIGHTCYAN} Once you have already modified it, please write Yes:"
-#     read mergeDone
-
-#     if test ${mergeDone} == "Yes"; then 
-#         bash $DIR/src/mergeEdit
-#     fi
-
-#   echo -e "${ORANGE} Make sure the merged rep-seqs.qza and the table.qza files have been created. Now we will perform the Taxonomic analysis:"
-#   # Perform Taxonomic Classification:
-#   echo -e "${PURPLE}Going forward to Taxonomic Classification..."
-#   bash $DIR/src/TaxonomicClassification
-# fi
-
-
-
 
 
 
