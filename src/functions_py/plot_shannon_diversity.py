@@ -65,7 +65,10 @@ def plot_shannon_diversity(normalized_microbiome_data, metadata, output_dir, gro
     plt.close()
 
     # Perform all statistical tests
-    results = statistics(combined_data, group, variable='Shannon Diversity')
+    if len(combined_data[group].unique())>1:
+       results = statistics(combined_data, group, variable='Shannon Diversity')
+    else: 
+        results = None
     
     if results!=None:
         # Print normality test results

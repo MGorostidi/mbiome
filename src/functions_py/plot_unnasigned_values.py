@@ -67,9 +67,11 @@ def plot_unassigned_values(normalized_microbiome_data, metadata, output_dir, sub
         plt.savefig(f'{output_dir}/{file_name}', dpi=300, bbox_inches='tight')
         plt.close()
 
-
         # Perform all statistical tests
-        results = statistics(combined_data, group, variable=column_to_plot)
+        if len(combined_data[group].unique())>1:
+            results = statistics(combined_data, group, variable=column_to_plot)
+        else: 
+            results = None
 
         if results!=None:
             # Print normality test results

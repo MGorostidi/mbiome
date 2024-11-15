@@ -47,7 +47,10 @@ def plot_richness(normalized_microbiome_data, metadata, output_dir, group='sampl
     plt.close()
 
     # Perform all statistical tests
-    results = statistics(combined_data, group, variable='Richness')
+    if len(combined_data[group].unique())>1:
+        results = statistics(combined_data, group, variable='Richness')
+    else: 
+        results = None
     
     if results!=None:
         # Print normality test results

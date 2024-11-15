@@ -73,7 +73,11 @@ def plot_ratio(normalized_microbiome_data, metadata, var1, var2, group='sample-t
     plt.show()
 
     # Perform all statistical tests
-    results = statistics(combined_data, group, variable='Ratio')
+    # Perform all statistical tests
+    if len(combined_data[group].unique())>1:
+        results = statistics(combined_data, group, variable='Ratio')
+    else: 
+        results = None
 
     if results!=None:
         # Print normality test results
