@@ -17,7 +17,7 @@ for run in $(seq 1 $SEQUENCING_RUNS); do
 done
 
 # Ask for truncating and trimming parameters:
-echo -e "\n${LIGHTCYAN} Enter truncating length (remember you need to have all runs into consideration)"
+echo -e "\n${LIGHTCYAN} Enter truncating length"
 read trunc_lenVal
 
 
