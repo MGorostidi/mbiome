@@ -9,25 +9,23 @@ source ${EXPERIMENT_PATH}/config.env
 # Convert AMPLICONS into an array
 IFS=',' read -r -a amplicon_array <<< "$AMPLICONS"
 
-# echo -e "${LIGHTCYAN}Please, enter again the amplicon name(s) used (ex: V3 / amp1 / V3,V4)"
-# read ampliconNames
-# array_amplicons=($(echo $ampliconNames | tr "," "\n"))
 
-# visualize quality graph of each .qzv created in cutadapt
-#for amplicon in "${array_amplicons[@]}"; do
-for amplicon in "${amplicon_array[@]}"; do
+# Define la función para ejecutar DADA2 en un amplicón específico
+run_dada2_for_amplicon() {
+  local amplicon=$1
   echo -e "\n${PURPLE}Performing Dada2 for ${amplicon} amplicon..."
   mkdir -p $EXPERIMENT_PATH/${amplicon}/dada2_output
 
-  echo -e "\n${ORANGE}Before DADA2 step, you need to visualize samples.qza (through samples.qzv) and decide the length of reads, so we can trunc by quality. Remember that you must use the same trunc length in every run by amplicon."
-  # Identifying all the files created for a specific amplicon, we can analyze all the runs for a specific region: 
+  echo -e "\n${ORANGE}Before DADA2 step, visualize samples.qza (through samples.qzv) and decide the length of reads for truncation by quality. Use the same trunc length in every run for each amplicon."
+  
+  # Identificar los archivos creados para este amplicón
   for file in "$EXPERIMENT_PATH/cutadapt"/*-$amplicon-*.qzv; do
     file_name=$(echo "$file" | sed "s|${EXPERIMENT_PATH}/cutadapt/||; s|\.qzv$||")
     echo -e "\n${PURPLE}Opening $file_name .. ${NC}"
-    qiime tools view $file
+    qiime tools view "$file"
   done
 
-  # Ask for truncating and trimming parameters:
+  # Pedir parámetros de truncado
   echo -e "\n${LIGHTCYAN} Enter truncating length for Amplicon $amplicon"
   read trunc_lenVal_byAmplicon
 
@@ -36,60 +34,51 @@ for amplicon in "${amplicon_array[@]}"; do
     echo -e "\n${PURPLE}Performing Dada2 for $file_name...${NC}"
 
     qiime dada2 denoise-pyro \
-      --i-demultiplexed-seqs $file \
+      --i-demultiplexed-seqs "$file" \
       --p-trunc-len ${trunc_lenVal_byAmplicon} \
       --p-n-threads 4 \
-      --o-representative-sequences $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-rep-seqs-pyro-trun${trunc_lenVal_byAmplicon}.qza \
-      --o-table $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-table-pyro-trun${trunc_lenVal_byAmplicon}.qza \
-      --o-denoising-stats $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-pyro-trun${trunc_lenVal_byAmplicon}.qza \
+      --o-representative-sequences "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-rep-seqs-pyro-trun${trunc_lenVal_byAmplicon}.qza" \
+      --o-table "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-table-pyro-trun${trunc_lenVal_byAmplicon}.qza" \
+      --o-denoising-stats "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-pyro-trun${trunc_lenVal_byAmplicon}.qza" \
       --verbose
-      # Since the Cutadapt has been used for removing primers, no trimming will be used. 
-
-      #Visualizing Resulting data...
-      #Converting DADA2 artifact .qza to .qzv
-      # qiime feature-table summarize \
-      # --i-table $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/Dada2_output/samples-run${run}-${Vregion}-table-pyro.qza \
-      # --o-visualization $EXPERIMENT_PATH/cutprimers_output_sorted_run${run}/Dada2_output/samples-run${run}-${Vregion}-table-pyro.qzv \
-      # --m-sample-metadata-file ${CURRENT_DIR}/samples-metadata-run${run}.tsv
-
-      # qiime feature-table tabulate-seqs \
-      # --i-data $EXPERIMENT_PATH/${amplicon}/dada2_output/samples-run${run}-${Vregion}-rep-seqs-pyro-trun${trunc_lenVal_byVregion}.qza \
-      # --o-visualization $EXPERIMENT_PATH/${amplicon}/dada2_output/samples-run${run}-${Vregion}-rep-seqs-pyro-trun${trunc_lenVal_byVregion}.qzv
 
     qiime metadata tabulate \
-            --m-input-file $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-pyro-trun${trunc_lenVal_byAmplicon}.qza \
-            --o-visualization $EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-pyro-trun${trunc_lenVal_byAmplicon}.qzv
+      --m-input-file "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-pyro-trun${trunc_lenVal_byAmplicon}.qza" \
+      --o-visualization "$EXPERIMENT_PATH/${amplicon}/dada2_output/${file_name}-stats-dada2-pyro-trun${trunc_lenVal_byAmplicon}.qzv"
   done
 
-  echo -e "\n${ORANGE}Sometimes the truncating length value we choose may not be optimal. To be able to assess whether we should choose another value, we must view the statistics table that is created after the Dada2 step. To know if the chosen value is good, we must look at the percentage of reads that pass the filter. For example, 70% would not be bad. However, we can re-run the Dada2 step with another value to compare the percentages. Let's visualize the statistic tables of each run run:${NC}"
-
-  # Visualize statistic.qzv to know if the Dada2 parameters were the correct ones
+  echo -e "\n${ORANGE}Sometimes the truncating length value may not be optimal. To verify, check the statistics table after DADA2. Ideally, 70% reads pass the filter. If not, re-run DADA2 with a different trunc length. Let's visualize each run's stats:${NC}"
+  
   for file in "$EXPERIMENT_PATH/${amplicon}/dada2_output/"/*-stats-dada2-*.qzv; do
-      file_name=$(echo "$file" | sed "s|${EXPERIMENT_PATH}/${amplicon}/dada2_output/||; s|\.qzv$||")
-      echo -e "\n${PURPLE}Visualizing $file_name...${NC}"
-      qiime tools view $file
+    file_name=$(echo "$file" | sed "s|${EXPERIMENT_PATH}/${amplicon}/dada2_output/||; s|\.qzv$||")
+    echo -e "\n${PURPLE}Visualizing $file_name...${NC}"
+    qiime tools view "$file"
   done
 
-  echo -e "\n${ORANGE}Once you have vizualize all the statistic tables... ${LIGHTCYAN} Do you want to re-run dada2 for amplicon ${amplicon}? (Write Yes or No)"
+  echo -e "\n${ORANGE}Once all stats tables are visualized... ${LIGHTCYAN} Do you want to re-run DADA2 for amplicon ${amplicon}? (Yes or No)"
   read repeatDada2
-  # # Decide if Dada2 needs to be re-run
-  if test ${repeatDada2} == "Yes"; then
-      echo -e "\n${PURPLE}Running DADA2 again..."
-      # For this version all the previous dada2 outputs need to be removed, later on this will be optimized!!
-      rm -r $EXPERIMENT_PATH/${amplicon}/dada2_output
-      bash $DIR/src/IT_Primers_Dada2
 
-  elif test ${repeatDada2} == "No"; then
-      echo -e "\n${PURPLE}DADA2 FOR ${amplicon} AMPLICON PERFORMED!"
-      # Add Dada2 parameters to config.env
-      {
-        echo "######### DADA2 ANALYSIS: #########"
-        echo "# Since cutadapt has been used for primer removal, no trimming is used"
-        echo "DADA2_TRUNC_${amplicon}=\"$trunc_lenVal_byAmplicon\""
-      } >> config.env
+  if [[ $repeatDada2 == "Yes" ]]; then
+    echo -e "\n${PURPLE}Running DADA2 again for ${amplicon}..."
+    rm -r "$EXPERIMENT_PATH/${amplicon}/dada2_output"
+    run_dada2_for_amplicon "$amplicon"  # Ejecuta la función solo para este amplicón actual
 
+  elif [[ $repeatDada2 == "No" ]]; then
+    echo -e "\n${PURPLE}DADA2 FOR ${amplicon} AMPLICON COMPLETED!"
+    # Guardar parámetros de Dada2 en config.env
+    {
+      echo "######### DADA2 ANALYSIS: #########"
+      echo "# Since cutadapt was used for primer removal, no trimming is used"
+      echo "DADA2_TRUNC_${amplicon}=\"$trunc_lenVal_byAmplicon\""
+    } >> config.env
   fi
+}
+
+# Iterar sobre cada amplicón usando la función
+for amplicon in "${amplicon_array[@]}"; do
+  run_dada2_for_amplicon "$amplicon"  # Llamar a la función para cada amplicón
 done
+
 
 echo -e "\n${PURPLE}DADA2 COMPLETED!"
 echo -e "\n${PURPLE}Continue to Taxonomic classification..."
