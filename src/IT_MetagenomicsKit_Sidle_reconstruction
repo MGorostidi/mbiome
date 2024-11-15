@@ -122,8 +122,7 @@ for Vregion in "${regions_array[@]}"; do
         --p-n-workers 4 \
         --o-collapsed-kmers $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${Vregion}-${first_trunc_length}nt-kmers.qza \
         --o-kmer-map $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${Vregion}-${first_trunc_length}nt-map.qza
-    
-    
+
     echo -e "${PURPLE}Starting $Vregion region alignment..."
     qiime sidle align-regional-kmers \
         --i-kmers $EXPERIMENT_PATH/sidle/databases/${DB_NAME}-sidle-filt-${Vregion}-${first_trunc_length}nt-kmers.qza \
@@ -138,9 +137,47 @@ for Vregion in "${regions_array[@]}"; do
     qiime metadata tabulate \
         --m-input-file $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${Vregion}-alignment.qza \
         --o-visualization $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${Vregion}-alignment.qzv \
-        --verbose \
+     --verbose \
 
-    # echo -e "${PURPLE}$Vregion region alignment finished!"
+    echo -e "${PURPLE}$Vregion region alignment finished!"
+
+    ############# MODIFIYING SAMPLEID: #############
+    # Dada2 output sampleID-s have incorporated the Region number: sample001_V2, sample001_V3, etc. For SIDLE we need the same sampleIDs in the tables: 
+    dada2_folder_byRegion=$EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output
+    # Create a temporary folder: 
+    mkdir -p $dada2_folder_byRegion/temp_dir
+
+    # change name to original .qza: 
+    mv ${dada2_folder_byRegion}/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza  ${dada2_folder_byRegion}/merged-${Vregion}-table-pyro-trun${first_trunc_length}-sampleIDbyRegion.qza 
+
+    # Export dada2 table: 
+    qiime tools export \
+    --input-path ${dada2_folder_byRegion}/merged-${Vregion}-table-pyro-trun${first_trunc_length}-sampleIDbyRegion.qza \
+    --output-path ${dada2_folder_byRegion}/temp_dir
+
+    # Convert created .biom file to tsv:
+    biom convert -i ${dada2_folder_byRegion}/temp_dir/feature-table.biom -o ${dada2_folder_byRegion}/temp_dir/feature-table.tsv --to-tsv
+    # Remove region extension from sample-ids: 
+    sed -i 's/_V[0-9]\+//g' ${dada2_folder_byRegion}/temp_dir/feature-table.tsv
+    # COnvert tsv to .biom:
+    biom convert -i ${dada2_folder_byRegion}/temp_dir/feature-table.tsv -o ${dada2_folder_byRegion}/temp_dir/feature-table-updated.biom --table-type="OTU table" --to-hdf5
+
+    # Import modified table
+    qiime tools import \
+    --input-path ${dada2_folder_byRegion}/temp_dir/feature-table-updated.biom\
+    --output-path ${dada2_folder_byRegion}/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza \
+    --type 'FeatureTable[Frequency]'
+
+    # Remove temp dir:
+    rm -rf $temp_dir
+    ####################################################
+
+    # Filtering samples: 
+    # Sidle gives error when samples have fewer than 1.000 total sequences.. 
+    qiime feature-table filter-samples \
+    --i-table $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza \
+    --p-min-frequency 1000 \
+    --o-filtered-table $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/merged-${Vregion}-table-pyro-trun${first_trunc_length}-filtered1000seq.qza
 
     p_reg="--p-region ${Vregion}"
     reg_alignment="--i-regional-alignment $EXPERIMENT_PATH/sidle/alignments/${DB_NAME}-${Vregion}-alignment.qza"
@@ -148,12 +185,11 @@ for Vregion in "${regions_array[@]}"; do
 
     reconstruct_db_command+=" ${p_reg} ${reg_alignment} ${kmer_map_file}"
 
-    reg_table="--i-regional-table $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/merged-${Vregion}-table-pyro-trun${first_trunc_length}.qza"
+    reg_table="--i-regional-table $EXPERIMENT_PATH/cutprimers_qiime2/${Vregion}/dada2_output/merged-${Vregion}-table-pyro-trun${first_trunc_length}-filtered1000seq.qza"
 
     reconstruct_counts_command+=" ${p_reg} ${reg_alignment} ${reg_table}"
 
 done
-
 
 mkdir -p $EXPERIMENT_PATH/sidle/reconstruction
 
@@ -167,7 +203,6 @@ eval $reconstruct_db_command
 qiime metadata tabulate \
  --m-input-file $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza \
  --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qzv
-
 
 # Finish reconstruct_counts_command
 reconstruct_counts_command+=" --i-database-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza --i-database-summary $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza --p-n-workers 4 --o-reconstructed-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza"
