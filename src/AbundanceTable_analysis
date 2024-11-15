@@ -65,7 +65,6 @@ for amplicon_to_analyze in "${amplicon_analysis_array[@]}"; do
             python3 $DIR/src/abundance_analysis.py $SILVA_PATH $abundance_table_silva $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
 
         else
-            echo -e "${LIGHTCYAN}Sidle todavía no está jeje"
             echo -e "${PURPLE} Performing abundance analysis of SIDLE results based on $SIDLE_REF_DB reference database...${NC}"
             python3 $DIR/src/create_sidle_taxonomy_table.py ${EXPERIMENT_PATH}/sidle
             
