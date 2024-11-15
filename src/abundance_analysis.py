@@ -128,16 +128,18 @@ if __name__ == '__main__':
     #abundance_table = analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, group=group_column, group_one='Untreated', group_two='Rebif44')
     print("Performing statistical analysis in taxonomies by selected group..")
     abundance_table_stats = analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, output_dir, group=group_column)
-    print("Plotting Volcano plots..")
-    plot_volcano(abundance_table_stats, output_dir)
-    plot_arctanvolcano(abundance_table_stats, output_dir)
 
-    # Boxplot graph of significantly different taxonomies: 
-    print("Plotting boxplot of significant taxonomies..")
-    plot_significant_boxplots(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir)
-    # Heatmap
-    print("Plotting heatmap graph of significant taxonomies..")
-    plot_significant_heatmap(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir, group_column=group_column)
+    if abundance_table_stats!=None:
+        print("Plotting Volcano plots..")
+        plot_volcano(abundance_table_stats, output_dir)
+        plot_arctanvolcano(abundance_table_stats, output_dir)
+
+        # Boxplot graph of significantly different taxonomies: 
+        print("Plotting boxplot of significant taxonomies..")
+        plot_significant_boxplots(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir)
+        # Heatmap
+        print("Plotting heatmap graph of significant taxonomies..")
+        plot_significant_heatmap(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir, group_column=group_column)
 
 
 
