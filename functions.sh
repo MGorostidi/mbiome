@@ -109,9 +109,9 @@ function stepPerform() {
         echo -e "\n${PURPLE}Running Abundance table analysis for $SELECTED_WORKFLOW pipeline"
         bash $DIR/src/AbundanceTable_analysis_Kitnosplit
     elif [ $SELECTED_STEP == "Analysis" ] && [ $SELECTED_WORKFLOW == "IT_MetagenomicsKit" ]; then 
-        echo -e "\n${PURPLE}Running Abundance table analysis. for $SELECTED_WORKFLOW pipeline"
+        echo -e "\n${PURPLE}Running Abundance table analysis for $SELECTED_WORKFLOW pipeline"
         bash $DIR/src/AbundanceTable_analysis_MetagenomicsKit
-    elif [ $SELECTED_STEP == "Taxonomy" ] && [ $SELECTED_WORKFLOW != "IT_KitNoSplit" ] && [ $SELECTED_WORKFLOW != "IT_MetagenomicsKit" ]; then   
+    elif [ $SELECTED_STEP == "Analysis" ] && [ $SELECTED_WORKFLOW != "IT_KitNoSplit" ] && [ $SELECTED_WORKFLOW != "IT_MetagenomicsKit" ]; then   
         echo -e "\n${PURPLE}Running Abundance table analysis for $SELECTED_WORKFLOW pipeline"
         bash $DIR/src/AbundanceTable_analysis
     elif test ${SELECTED_STEP} == "Metnet"; then
