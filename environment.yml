@@ -740,6 +740,6 @@ dependencies:
   - zstd=1.5.5=hfc55251_0
   - pip:
       - adjusttext==1.3.0
-      - metnet==2023.0.1
+      #- metnet==2023.0.1
       - q2-sidle==2021.2.dev0
       - regex==2024.9.11
