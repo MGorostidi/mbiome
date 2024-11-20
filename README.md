@@ -141,6 +141,12 @@ bash import_databases.sh
 ```
 
 ## Running the workflow: 
+In order to run an experiment, some initial files need to be prepared: 
+0. Create a folder with your experiment name in EXPERIMENTS folder. And inside it, include:
+1. A config.env file, where all the parameters/characteristics of the experiment will be collected. 
+2. One samples-manifest-runXX.tsv file by run. (Note: as sample-id please write down the same name as the .fastq.gz file. Ex: sample01-2024-Control.fastq.gz --> sample01-2024-Control)
+3. One samples-metadata.tsv file, where all the metadata of each sample is included. Remember to use the same sample-id-s as in samples-manifest files. 
+Once the 3 files are created, we can run the workflow:
 Everything is integrated in an unique script, so you just need to run it and answer the questions that it iteractively asks:
 ```shell
 bash Qiime2PIPELINE_MAIN
