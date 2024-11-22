@@ -4,29 +4,14 @@ source ../../initialize_parameters.sh
 
 EXPERIMENT_PATH=$PWD
 
-# #Ask for run ID numbers
-# echo -e "${LIGHTCYAN}Enter the numbers of run sequencings again (ex: 1,2,3):"
-# read runNums
-# array_runs=($(echo $runNums | tr "," "\n"))
-
 source ${EXPERIMENT_PATH}/config.env
-
-# echo -e "${ORANGE}Sometimes, different amplicons are mixed in the sample sample, so more than one pair of primers need to be removed. ${LIGHTCYAN}Please, write the number of amplicons:"
-# read ampliconNumber 
 
 # Convert AMPLICONS into an array
 IFS=',' read -r -a amplicon_array <<< "$AMPLICONS"
 
 mkdir -p ${EXPERIMENT_PATH}/cutadapt
-#for i in $(seq 1 $ampliconNumber); do
+
 for amplicon in "${amplicon_array[@]}"; do
-  # echo -e "${LIGHTCYAN}Please, give a name to the amplicon number $i (ex: amp1 / V4):"
-  # read amplicon_name    
-  # echo -e "\n${LIGHTCYAN}Please, write the nucleotide sequence of FORWARD Primer for amplicon $amplicon_name:"
-  # read fwd_primer
-  # echo -e "\n${LIGHTCYAN}Please, write the nucleotide sequence of REVERSE Primer for amplicon $amplicon_name:"
-  # read rev_primer 
-  
   # Read amplicon primers:
   fwd_primer_var="${amplicon}_fwd_primer"
   rev_primer_var="${amplicon}_rev_primer"
@@ -35,7 +20,7 @@ for amplicon in "${amplicon_array[@]}"; do
 
   #for run in "${array_runs[@]}"; do
   for run in $(seq 1 $SEQUENCING_RUNS); do
-    echo -e "\n${PURPLE}Using cutadapt for removing Forward primer sequences for run ${run} and amplicon $amplicon_name..."
+    echo -e "\n${PURPLE}Using cutadapt for removing Forward primer sequences for run ${run} and amplicon $amplicon..."
     qiime cutadapt trim-paired \
       --p-cores 4 \
       --i-demultiplexed-sequences ${EXPERIMENT_PATH}/import/samples-run${run}.qza \
