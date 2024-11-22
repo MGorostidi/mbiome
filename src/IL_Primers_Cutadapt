@@ -27,6 +27,7 @@ for amplicon in "${amplicon_array[@]}"; do
       --p-front-f ${fwd_primer} \
       --p-front-r ${rev_primer} \
       --p-error-rate 0.1 \
+      --p-indels \
       --p-match-read-wildcards \
       --p-match-adapter-wildcards \
       --p-discard-untrimmed \
