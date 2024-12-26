@@ -78,15 +78,15 @@ MetagenomicsPP will be included in mbiome, but if you don't see a folder inside 
 
 6. Downloading and Installing Sidle for reconstruction: 
 ```shell
-# Downloading Sidle and installing Sidle: 
-# Tutorial: https://q2-sidle.readthedocs.io/en/latest/database_preparation.html
-# Activate your qiime2 environment: 
-conda activate qiime2-amplicon-2024.2
-conda install dask
-conda install -c conda-forge -c bioconda -c qiime2 -c defaults xmltodict
-# pip install git+https://github.com/bokulich-lab/RESCRIPt.git # IF RESCRIPT IS NOT INSTALLED IN YOUR QIIME2 ENVIRONMENT (Last versions normally include it)
-pip install git+https://github.com/jwdebelius/q2-sidle
-qiime dev refresh-cache
+# # Downloading Sidle and installing Sidle: 
+# # Tutorial: https://q2-sidle.readthedocs.io/en/latest/database_preparation.html
+# # Activate your qiime2 environment: 
+# conda activate qiime2-amplicon-2024.2
+# conda install dask
+# conda install -c conda-forge -c bioconda -c qiime2 -c defaults xmltodict
+# # pip install git+https://github.com/bokulich-lab/RESCRIPt.git # IF RESCRIPT IS NOT INSTALLED IN YOUR QIIME2 ENVIRONMENT (Last versions normally include it)
+# pip install git+https://github.com/jwdebelius/q2-sidle
+# qiime dev refresh-cache
 ```
 <!-- 
 6. Create Picrust2 environment for Picrust2 analysis: 
