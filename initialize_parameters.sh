@@ -24,10 +24,16 @@ if [ -z "$DIR" ]; then
     fi
 fi
 
+# # Identify Conda folder: 
+# conda_dir=$(which conda)
+# conda_dir=${conda_dir//\/bin\/conda}
+# DIR_CONDA=${conda_dir}/etc/profile.d/conda.sh
+
 # Identify Conda folder: 
 conda_dir=$(which conda)
-conda_dir=${conda_dir//\/bin\/conda}
-DIR_CONDA=${conda_dir}/etc/profile.d/conda.sh
+# Extraer la ruta hasta el directorio donde está instalada miniconda
+miniconda_base=$(echo $conda_dir | sed -E 's|^(.*miniconda3)/.*|\1|')
+DIR_CONDA=${miniconda_base}/etc/profile.d/conda.sh
 
 QIIME2_ENV_NAME=qiime2-amplicon-2024.2
 
