@@ -18,7 +18,8 @@ Our workflow is compatible with FASTQ files generated from both Ion Torrent and 
 
 ## Workflow diagram and steps: 
 
-!!! ESTOOOOO OTRO DIAAA !!!
+![Alt text](DiagramFigures/MbiomeFinal.png)
+![Alt text](DiagramFigures/MbiomeTaxonomyFinal.png)
 
 ## Getting Started
 
