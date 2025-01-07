@@ -152,3 +152,8 @@ Everything is integrated in an unique script, so you just need to run it and ans
 ```shell
 bash Qiime2PIPELINE_MAIN
 ```
+
+
+## Cite us: 
+
+Microbiota modulation by teriflunomide therapy in people with multiple sclerosis: An observational case-control study. Moles, L., Otaegui-Chivite, A., Gorostidi-Aicua, M., Romarate, L., Mendiburu, I., Crespillo-Velasco, H., Álvarez de Arcaya, A., Ferreira, E., Arruti, M., Castillo-Triviño, T., & Otaegui, D. Neurotherapeutics. 2024;21(6):e00457. doi:  https://doi.org/10.1016/j.neurot.2024.e00457
