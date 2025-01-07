@@ -7,7 +7,6 @@
 *.sav
 *.xlsx
 *.zip
-*.png
 *.docx
 *.txt
 !requirements.txt
