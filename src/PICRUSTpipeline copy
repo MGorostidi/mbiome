@@ -1,0 +1,58 @@
+#!/bin/bash
+
+source ../../initialize_parameters.sh
+
+#We store current path:
+CURRENT_DIR=$PWD
+
+#Note that in order to use picrust2, this has to be intalled previously. (If it is already done it will work. But if is not working take into account that it may be because of this not being installed
+echo -e "${ORANGE} Please enter if the sequenciation has been IonTorrent (then write pyro) or if it has been through Illumina (write if it has been paired or single). ${LIGHTCYAN} Options (pyro, paired, single):"
+read seqType
+
+# echo -e "${ORANGE} In order to create the files for running Picrust2, ${LIGHTCYAN} please, enter the exact name of the dada2 output table.qza file: (ex: table-dada2-pyro)"
+# read table
+# echo -e "${LIGHTCYAN} Now same for rep-seqs file:(ex: rep-seqs-dada2-pyro)"
+# read repSeqs
+
+echo -e "${ORANGE} Does the table correspond to a specific samples group (ex: MS or HC) or is the general table? ${LIGHTCYAN} (Write the group name or total)"
+read tableGroup
+
+echo -e "${PURPLE}Creating Picrust2 files...${NC}"
+mkdir ${CURRENT_DIR}/Picrust2_${tableGroup}
+
+
+#Exporting data to .biom format
+qiime tools export \
+  --input-path ${CURRENT_DIR}/Dada2_output/table-${seqType}.qza \
+  --output-path ${CURRENT_DIR}/Picrust2_${tableGroup}/exported-feature-table-${tableGroup}
+
+
+#Creating .fna file..
+qiime tools export \
+--input-path ${CURRENT_DIR}/Dada2_output/rep-seqs-${seqType}.qza \
+--output-path ${CURRENT_DIR}/Picrust2_${tableGroup}/exported-fna-fasta-file-${tableGroup}
+
+echo -e "${PURPLE}Activating and running Picrust2..."
+# conda init
+# conda deactivate
+# source $DIR_CONDA
+#conda init
+# which conda
+
+
+# echo "conda dir 2:"
+# echo $DIR_CONDA
+
+conda activate /home/unidad/miniconda3/envs/picrust2
+picrust2_pipeline.py -s ${CURRENT_DIR}/Picrust2_${tableGroup}/exported-fna-fasta-file-${tableGroup}/dna-sequences.fasta -i ${CURRENT_DIR}/Picrust2_${tableGroup}/exported-feature-table-${tableGroup}/feature-table.biom -o ${CURRENT_DIR}/Picrust2_${tableGroup}/picrust2_out_pipeline_${tableGroup} -p 4
+
+echo -e "${LIGHTCYAN}You should be seeing a huge list of numbers and letters (feature IDs actually) above... These are the FeatureIDs that are removed from the analysis due to poor quality alignment, so.. JUST IN CASE, I would copy and paste them in a TXT file :D "
+
+echo -e "${ORANGE}Now you have already run Picrust2 for a specific table/group... Do you want to re-run the algorithm for another table/group? ${LIGHTCYAN} (Write Yes or No):"
+read repeatPicrust
+
+if test ${repeatPicrust} == "Yes"; then 
+  bash $DIR/src/PICRUSTpipeline
+fi
+
+
