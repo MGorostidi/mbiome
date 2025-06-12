@@ -54,6 +54,9 @@ def plot_beta_diversity(normalized_microbiome_data, metadata, output_dir, group=
         combined_data = metadata.copy()
         combined_data = combined_data.join(pcoa_df)
 
+        # Remove samples if they don't have values in group column: 
+        combined_data = combined_data[combined_data[group].notna()]
+
         # Plot the PCoA results
         plt.figure(figsize=(6,4))
         sns.scatterplot(x='PC1', y='PC2', hue=group, data=combined_data, palette=palette)
