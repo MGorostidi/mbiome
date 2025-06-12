@@ -42,6 +42,9 @@ def plot_unassigned_values(normalized_microbiome_data, metadata, output_dir, sub
         combined_data = metadata.copy()
         combined_data[column_to_plot] = y_values
 
+        # Remove samples if they don't have values in group column: 
+        combined_data = combined_data[combined_data[group].notna()]
+
         # Plot the distribution of values
         plt.figure(figsize=(6, 4))
         sns.histplot(y_values, kde=True)
@@ -73,26 +76,37 @@ def plot_unassigned_values(normalized_microbiome_data, metadata, output_dir, sub
         else: 
             results = None
 
-        if results!=None:
-            # Print normality test results
-            print("\nNormality Test Results (Shapiro-Wilk Test):")
-            for grp, (stat, p_value) in results['normality_results'].items():
-                print(f"{grp}: W-stat={stat:.4f}, p-value={p_value:.4f}")
+        # if results!=None:
+        #     # Print normality test results
+        #     print("\nNormality Test Results (Shapiro-Wilk Test):")
+        #     for grp, (stat, p_value) in results['normality_results'].items():
+        #         print(f"{grp}: W-stat={stat:.4f}, p-value={p_value:.4f}")
             
-            # Print statistical test results
-            test_results = results['statistical_test']
-            test_name = test_results['test_name']
-            stat = test_results['statistic']
-            p_value = test_results['p_value']
-            print(f"\nStatistical Test Results ({test_name}):")
-            print(f"{test_name} statistic={stat:.4f}, p-value={p_value:.4f}")
-            print(f"FDR-adjusted p-value={test_results['fdr_adjusted_p_value']:.4f}")
+        #     # Print statistical test results
+        #     test_results = results['statistical_test']
+        #     test_name = test_results['test_name']
+        #     stat = test_results['statistic']
+        #     p_value = test_results['p_value']
+        #     print(f"\nStatistical Test Results ({test_name}):")
+        #     print(f"{test_name} statistic={stat:.4f}, p-value={p_value:.4f}")
+        #     print(f"FDR-adjusted p-value={test_results['fdr_adjusted_p_value']:.4f}")
 
 
-            # Convert 'results' to DataFrame and save:
-            results_df = pd.DataFrame.from_dict(results)
-            output_file = os.path.join(output_dir, f'{substring_to_find.lower()}_across_{group}s_statistics_results3.csv')
-            results_df.to_csv(output_file, index=False)
+        #     # Convert 'results' to DataFrame and save:
+        #     results_df = pd.DataFrame.from_dict(results)
+        #     output_file = os.path.join(output_dir, f'{substring_to_find.lower()}_across_{group}s_statistics_results.csv')
+        #     results_df.to_csv(output_file, index=False)
+        
+        if results!=None:
+            # Convertir normality_results en DataFrame
+            results_df = pd.DataFrame.from_dict(results['normality_results'], orient='index', columns=['W_statistic', 'p_value'])
+            results_df.index.name = 'Group'
+
+            # Añadir las columnas del test estadístico a todas las filas
+            for key, value in results['statistical_test'].items():
+                results_df[key] = value
+            
+            results_df.to_csv(os.path.join(output_dir, f'{substring_to_find.lower()}_across_{group}s_statistics_results.csv'))
 
     else:
         print(f'No columns containing "{substring_to_find}" found.')
