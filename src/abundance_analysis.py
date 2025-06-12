@@ -89,7 +89,7 @@ if __name__ == '__main__':
     ### Normalization
     # We normalize the microbiome abundance values by the total abundance for each sample.
     # Normalize data
-    print("Normalizing abundance table..")
+    print("\nNormalizing abundance table..")
     normalized_abundance_matrix = normalize_abundance(abundance_matrix, output_dir, save_normalized=True)
 
     ### Unclassified values
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     substring_to_find = 'Unclassified'
  
     # Call the plotting function
-    print("Creating Unnasigned plot..")
+    print("\nCreating Unnasigned plot..")
     plot_unassigned_values(normalized_abundance_matrix, metadata, output_dir, substring_to_find, group_column)
 
     ### Normalization without unclassified values
@@ -111,34 +111,40 @@ if __name__ == '__main__':
 
     ### Analysis
     ## Richness
-    print("Creating Richness plot..")
+    print("\nCreating Richness plot..")
     plot_richness(normalized_signed_abundance_matrix, metadata, output_dir, group=group_column, palette='pastel')
     ## Shanon diversity 
-    print("Creating Shannon Diversity plot..")
+    print("\nCreating Shannon Diversity plot..")
     plot_shannon_diversity(normalized_signed_abundance_matrix, metadata, output_dir, group=group_column, palette='pastel')
     ## Beta Diversity
-    print("Creating Beta Diversity plot..")
+    print("\nCreating Beta Diversity plot..")
     plot_beta_diversity(normalized_signed_abundance_matrix, metadata, output_dir, group=group_column, metric='braycurtis', palette='pastel')
 
     ## Abundance
-    print("Plotting abundance barplot..")
+    print("\nPlotting abundance barplot..")
     plot_abundance(normalized_signed_abundance_matrix,metadata,output_dir,group=group_column,taxonomy_level=tax_level)
     # abundance analysis
     # Assuming `normalized_signed_abundance_matrix` and `metadata` are your dataframes and `group` is the grouping variable
     #abundance_table = analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, group=group_column, group_one='Untreated', group_two='Rebif44')
-    print("Performing statistical analysis in taxonomies by selected group..")
+    print("\nPerforming statistical analysis in taxonomies by selected group..")
     abundance_table_stats = analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, output_dir, group=group_column)
 
-    if abundance_table_stats!=None:
-        print("Plotting Volcano plots..")
-        plot_volcano(abundance_table_stats, output_dir)
-        plot_arctanvolcano(abundance_table_stats, output_dir)
+
+    if abundance_table_stats is not None:
+        # Check the number of groups, Volcano plot would only be performes if num_groups==2:
+        groups = metadata[group_column].unique()
+        num_groups = len(groups)
+
+        if num_groups == 2:
+            print("\nPlotting Volcano plots..")
+            plot_volcano(abundance_table_stats, output_dir)
+            plot_arctanvolcano(abundance_table_stats, output_dir)
 
         # Boxplot graph of significantly different taxonomies: 
-        print("Plotting boxplot of significant taxonomies..")
-        plot_significant_boxplots(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir)
+        print("\nPlotting boxplot of significant taxonomies..")
+        plot_significant_boxplots(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir, group=group_column)
         # Heatmap
-        print("Plotting heatmap graph of significant taxonomies..")
+        print("\nPlotting heatmap graph of significant taxonomies..")
         plot_significant_heatmap(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir, group_column=group_column)
 
 
