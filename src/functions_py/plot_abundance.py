@@ -27,6 +27,9 @@ def plot_abundance(normalized_microbiome_data, metadata, output_dir, group='samp
     # Merge microbiome data with metadata
     merged_data = normalized_microbiome_data.merge(metadata[[group]], left_index=True, right_index=True)
 
+    # Remove samples if they don't have values in group column: 
+    #merged_data = merged_data[merged_data[group].notna()]
+
     # Calculate mean abundance for each phylum in each group
     mean_abundance = merged_data.groupby(group).mean()
 
