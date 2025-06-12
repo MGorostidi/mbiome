@@ -36,7 +36,8 @@ def statistics(combined_data, group, variable):
         # }
 
     else:
-        print("Performing statistical analysis for "+str(variable)+" variable")
+        if variable!='Abundance':
+            print("\nPerforming statistical analysis for "+str(variable)+" variable")
         # Check normality of richness within each group using Shapiro-Wilk test
         normality_results = {}
         for grp in combined_data[group].unique():
