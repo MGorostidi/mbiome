@@ -41,8 +41,12 @@ def analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, 
             
             p_values = []
             for column in normalized_signed_abundance_matrix.columns:
+                # print("Performing statistical analysis for "+str(column)+" variable")
                 combined_data = metadata.copy()
                 combined_data['Abundance'] = normalized_signed_abundance_matrix[column]
+
+                # Remove samples if they don't have values in group column: 
+                combined_data = combined_data[combined_data[group].notna()]
                 
                 groups = combined_data[[group, 'Abundance']].groupby([group])['Abundance'].apply(list)
                 group_counter = combined_data[[group, 'Abundance']].groupby([group]).apply('count')
@@ -64,9 +68,14 @@ def analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, 
 
             # Analyze each feature
             for i, column in enumerate(normalized_signed_abundance_matrix.columns):
+                # print("Performing statistical analysis for "+str(column)+" variable")
+
                 combined_data = metadata.copy()
                 combined_data['Abundance'] = normalized_signed_abundance_matrix[column]
-                
+
+                # Remove samples if they don't have values in group column: 
+                combined_data = combined_data[combined_data[group].notna()]
+
                 # Perform the statistical analysis
                 stats_result = statistics(combined_data, group, variable='Abundance')
                 
@@ -122,26 +131,34 @@ def analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, 
         else:
             p_values = []
             for column in normalized_signed_abundance_matrix.columns:
+                # print("Performing statistical analysis for "+str(column)+" variable")
                 combined_data = metadata.copy()
                 combined_data['Abundance'] = normalized_signed_abundance_matrix[column]
+                
+                # Remove samples if they don't have values in group column: 
+                combined_data = combined_data[combined_data[group].notna()]
+
+                group_counter = combined_data[[group, 'Abundance']].groupby([group]).apply('count')
+
                 if not all(group_counter['Abundance'] > 2):
                     print("There is no enough data for statistical analysis! (Maybe one of the category has < 3 samples? Shapiro normality test requires at least 3 by group)")
                 else:
                     # Perform the statistical analysis
                     stats_result = statistics(combined_data, group, variable='Abundance')
                     p_values.append(stats_result['statistical_test']['p_value'])
-            
-            print("tsats vacio??")
-            print(stats_result)
-            print(stats_result.shape)
+
             # Apply FDR correction
             _, fdr_adjusted_p_values, _, _ = multipletests(p_values, method='fdr_bh')
 
             # Analyze each feature
             for i, column in enumerate(normalized_signed_abundance_matrix.columns):
+                # print("Performing statistical analysis for "+str(column)+" variable")
                 combined_data = metadata.copy()
                 combined_data['Abundance'] = normalized_signed_abundance_matrix[column]
-                
+
+                # Remove samples if they don't have values in group column: 
+                combined_data = combined_data[combined_data[group].notna()]
+
                 # Perform the statistical analysis
                 stats_result = statistics(combined_data, group, variable='Abundance')
 
