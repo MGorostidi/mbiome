@@ -187,7 +187,7 @@ qiime metadata tabulate \
 
 
 # Finish reconstruct_counts_command
-reconstruct_counts_command+=" --i-database-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza --i-database-summary $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza --p-n-workers 4 --o-reconstructed-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza"
+reconstruct_counts_command+=" --i-database-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza --i-database-summary $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-summary.qza --p-n-workers 2 --o-reconstructed-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza"
 
 # Run reconstruct_db_command
 eval $reconstruct_counts_command
