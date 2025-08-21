@@ -1,0 +1,12 @@
+sample-id	forward-absolute-filepath	reverse-absolute-filepath
+#q2:types	categorical	categorical
+20240621-IL-sample1	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample1-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample1-R2.fastq.gz
+20240621-IL-sample2	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample2-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample2-R2.fastq.gz
+20240621-IL-sample3	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample3-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample3-R2.fastq.gz
+20240621-IL-sample4	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample4-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample4-R2.fastq.gz
+20240621-IL-sample5	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample5-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample5-R2.fastq.gz
+20240621-IL-sample6 /home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample6-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample6-R2.fastq.gz
+20240621-IL-sample7	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample7-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample7-R2.fastq.gz
+20240621-IL-sample8	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample8-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample8-R2.fastq.gz
+20240621-IL-sample9	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample9-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample9-R2.fastq.gz
+20240621-IL-sample10	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample10-R1.fastq.gz	/home/unidad/Desktop/MICROBIOTA/rawDATA/RawData-Illumina/20240621-IL-sample10-R2.fastq.gz
