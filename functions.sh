@@ -23,8 +23,7 @@ function stepPerform() {
          # 2.1) If samples come from different sequencing runs, previous steps are performed by run, so a merging of Dada2 output is needed ${LIGHTCYAN}(write: Merge)${ORANGE}
          # 3) Taxonomic Classification ${LIGHTCYAN}(write: Taxonomy)${ORANGE}
          # 4) Abundance table analysis ${LIGHTCYAN}(write: Analysis)${ORANGE}
-         # 5) Functional Analysis by PICRUST2 ${LIGHTCYAN}(write: Picrust)${ORANGE}
-         # 6) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
+         # 5) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
          #Please select the step:${LIGHTCYAN}(Write one of the above names):"
         read stepDecided
         SELECTED_STEP=${stepDecided}
@@ -41,8 +40,7 @@ function stepPerform() {
          # 2.1) If samples come from different sequencing runs, previous steps are performed by run, so a merging of Dada2 output is needed ${LIGHTCYAN}(write: Merge)${ORANGE}
          # 3) Taxonomic Classification; both VSEARCH and SIDLE reconstruction options are included ${LIGHTCYAN}(write: Taxonomy)${ORANGE}
          # 4) Abundance table analysis ${LIGHTCYAN}(write: Analysis)${ORANGE}
-         # 5) Functional Analysis by PICRUST2 (Remember that this is not possible for Sidle output) ${LIGHTCYAN}(write: Picrust)${ORANGE}
-         # 6) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
+         # 5) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
          #Please select the step:${LIGHTCYAN}(Write one of the above names):"
         read stepDecided
         SELECTED_STEP=${stepDecided}
@@ -58,8 +56,7 @@ function stepPerform() {
          # 3.1) If samples come from different sequencing runs, previous steps are performed by run, so a merging of Dada2 output is needed ${LIGHTCYAN}(write: Merge)${ORANGE}
          # 4) Taxonomic Classification VSEARCH ${LIGHTCYAN}(write: Taxonomy)${ORANGE}
          # 5) Abundance table analysis ${LIGHTCYAN}(write: Analysis)${ORANGE}
-         # 6) Functional Analysis by PICRUST2 (Remember that this is not possible for Sidle output) ${LIGHTCYAN}(write: Picrust)${ORANGE}
-         # 7) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
+         # 6) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
          #Please select the step:${LIGHTCYAN}(Write one of the above names):"
         read stepDecided
         SELECTED_STEP=${stepDecided}
@@ -75,8 +72,7 @@ function stepPerform() {
          # 3.1) If samples come from different sequencing runs, previous steps are performed by run, so a merging of Dada2 output is needed ${LIGHTCYAN}(write: Merge)${ORANGE}
          # 4) Taxonomic Classification VSEARCH ${LIGHTCYAN}(write: Taxonomy)${ORANGE}
          # 5) Abundance table analysis ${LIGHTCYAN}(write: Analysis)${ORANGE}
-         # 6) Functional Analysis by PICRUST2 (Remember that this is not possible for Sidle output) ${LIGHTCYAN}(write: Picrust)${ORANGE}
-         # 7) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
+         # 6) Functional Analysis by METNET ${LIGHTCYAN}(write: Metnet)${ORANGE}
          #Please select the step:${LIGHTCYAN}(Write one of the above names):"
         read stepDecided
         SELECTED_STEP=${stepDecided}
@@ -114,9 +110,9 @@ function stepPerform() {
     elif [ $SELECTED_STEP == "Analysis" ] && [ $SELECTED_WORKFLOW != "IT_KitNoSplit" ] && [ $SELECTED_WORKFLOW != "IT_MetagenomicsKit" ]; then   
         echo -e "\n${PURPLE}Running Abundance table analysis for $SELECTED_WORKFLOW pipeline"
         bash $DIR/src/AbundanceTable_analysis
-    elif test ${SELECTED_STEP} == "Picrust"; then
-        echo -e "\n${PURPLE}Running Picrust2 Functional analysis.."
-        bash $DIR/src/PICRUSTpipeline
+    elif test ${SELECTED_STEP} == "Metnet"; then
+        echo -e "\n${PURPLE}Running Metnet Functional analysis.."
+        bash $DIR/src/Function_Metnet
 
     fi
 }
