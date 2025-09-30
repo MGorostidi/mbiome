@@ -194,7 +194,7 @@ eval $reconstruct_counts_command
 
 qiime feature-table summarize \
  --i-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza \
- --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-tablee.qzv
+ --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qzv
 
 qiime tools export \
  --input-path $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza \
