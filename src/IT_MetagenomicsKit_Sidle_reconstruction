@@ -6,6 +6,7 @@ source ../../initialize_parameters.sh
 EXPERIMENT_PATH=$PWD
 
 echo -e "${ORANGE}Please, ensure that Sidle has already been installed (steps are described in Readme)"
+echo -e "${ORANGE}Holi!"
 
 # echo -e "${ORANGE}Sidle requires time and resources, therefore, it will only be performed for the reference database of your choice.${LIGHTCYAN}Please, write SILVA or GG (if you are not sure, we recommend SILVA):"
 # read refDB
@@ -211,20 +212,23 @@ reconstruct_counts_command+=" --i-database-map $EXPERIMENT_PATH/sidle/reconstruc
 echo $reconstruct_counts_command
 eval $reconstruct_counts_command
 
+
 qiime feature-table summarize \
  --i-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza \
- --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-tablee.qzv
+ --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qzv
+
+qiime feature-table summarize \
+  --i-table $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza \
+  --o-visualization $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qzv
 
 qiime tools export \
  --input-path $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-table.qza \
- --output-path $EXPERIMENT_PATH/sidle/reconstruction
-
+ --output-path $EXPERIMENT_PATH/sidle/reconstruction 
 
 biom convert \
     -i $EXPERIMENT_PATH/sidle/reconstruction/feature-table.biom \
     -o $EXPERIMENT_PATH/sidle/${DB_NAME}-sidle-filt-feature-table.tsv \
     --to-tsv
-
 
 qiime sidle reconstruct-taxonomy \
  --i-reconstruction-map $EXPERIMENT_PATH/sidle/reconstruction/${DB_NAME}-sidle-filt-league-map.qza \
