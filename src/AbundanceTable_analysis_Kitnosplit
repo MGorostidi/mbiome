@@ -54,3 +54,7 @@ SILVA_PATH=${EXPERIMENT_PATH}//taxonomic_analysis_abundance_results/${TAX_LEVEL_
 mkdir -p $SILVA_PATH
 python3 $DIR/src/abundance_analysis.py $SILVA_PATH $abundance_table_silva $num_metadata_columns $GROUP_METADATA_COLUMN $TAX_LEVEL_ANALYSIS
 
+if test ${FUNC_ANALYSIS} == "Yes"; then
+    echo -e "\n${PURPLE}Continue to Metnet Functional analysis..."
+    bash $DIR/src/Function_Metnet
+fi

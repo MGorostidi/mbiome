@@ -78,4 +78,7 @@ for amplicon_to_analyze in "${amplicon_analysis_array[@]}"; do
 done
 
 
-# EL NUMERO DE METDATA CCOLUMNS PUEDO SACARLO CON LAS NUM DE COLUMNS DE METADATA.TSV!!!
+if test ${FUNC_ANALYSIS} == "Yes"; then
+    echo -e "\n${PURPLE}Continue to Metnet Functional analysis..."
+    bash $DIR/src/Function_Metnet
+fi
