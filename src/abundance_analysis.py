@@ -123,12 +123,25 @@ if __name__ == '__main__':
     ## Abundance
     print("\nPlotting abundance barplot..")
     plot_abundance(normalized_signed_abundance_matrix,metadata,output_dir,group=group_column,taxonomy_level=tax_level)
+
+    # --- Filter groups with < min_group_size samples globally ---
+    def filter_small_groups(metadata, abundance_matrix, group_column, min_group_size=3):
+        group_counts = metadata[group_column].value_counts()
+        small_groups = group_counts[group_counts < min_group_size].index.tolist()
+        if small_groups:
+            print(f"Excluding small groups (<{min_group_size} samples): {small_groups}")
+            metadata = metadata[~metadata[group_column].isin(small_groups)]
+            abundance_matrix = abundance_matrix.loc[metadata.index]
+        return metadata, abundance_matrix
+
+    metadata, normalized_signed_abundance_matrix = filter_small_groups(
+        metadata, normalized_signed_abundance_matrix, group_column, min_group_size=3)
+    
     # abundance analysis
     # Assuming `normalized_signed_abundance_matrix` and `metadata` are your dataframes and `group` is the grouping variable
     #abundance_table = analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, group=group_column, group_one='Untreated', group_two='Rebif44')
     print("\nPerforming statistical analysis in taxonomies by selected group..")
     abundance_table_stats = analyze_abundance_differences(normalized_signed_abundance_matrix, metadata, output_dir, group=group_column)
-
 
     if abundance_table_stats is not None:
         # Check the number of groups, Volcano plot would only be performes if num_groups==2:
@@ -147,19 +160,11 @@ if __name__ == '__main__':
         print("\nPlotting heatmap graph of significant taxonomies..")
         plot_significant_heatmap(abundance_table_stats, normalized_signed_abundance_matrix, metadata, output_dir, group_column=group_column)
 
+        print("\nPlotting Firmicutes/Bacteroidetes ratio graph..")
+        plot_ratio(normalized_signed_abundance_matrix, metadata, output_dir, var1='Firmicutes',var2='Bacteroidetes',group=group_column)
 
 
-
-
-
-
-
-    # ###############33 PENDIENTE!
-
-    # # # Quieres calcular frimicutes/bacteroidetes? SI -_> se lee direcatment el level-2.csv
-    # # plot_ratio(normalized_signed_abundance_matrix,metadata, var1='Firmicutes',var2='Bacteroidetes',group='sample-type')
-
-
+    # PENDIENTE?
     # # %% [markdown]
     # # ### Longitudinal, darl una vueta
     # # 
